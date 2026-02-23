@@ -13,9 +13,15 @@ function toMinutes(hhmm) {
   // 解構賦值 h = 10 m = 30
   const [h, m] = hhmm.split(':').map(Number)
   return h * 60 + m
-}                                                      
+}
 
-// 新增預約 booking
+// 獲取預約
+export async function listBookings() {
+  await delay()
+  mockDB.get().bookings
+}
+
+// 新增預約
 export async function createBooking(payload) {
   await delay()
   const db = mockDB.get()
