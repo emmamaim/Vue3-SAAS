@@ -4,7 +4,7 @@ import {
   createBooking,
   updateBooking,
   removeBooking,
-} from '@/module/schedule/schedule.api'
+} from '@/modules/schedule/schedule.api.js'
 
 export const useScheduleStore = defineStore('schedule', {
   state: () => ({
@@ -15,8 +15,10 @@ export const useScheduleStore = defineStore('schedule', {
   getters: {
     // 近期行程（未來）
     upcoming: (s) => {
-      const today = new Date().toISOString.slice(0, 10)
-      return s.items.filter((b) => b.date >= today)
+      // 防呆處理
+      const items = Array.isArray(s.items) ? s.items : []
+      const today = new Date().toISOString().slice(0, 10)
+      return items.filter((b) => b.date >= today)
     },
   },
   actions: {

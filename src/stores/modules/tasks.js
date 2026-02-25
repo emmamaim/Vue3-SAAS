@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 // store不接觸localStorage -> 負責呼叫api
-import { listTasks, createTask, updateTask, removeTask } from '@/module/schedule/tasks/tasks.api'
+import { listTasks, createTask, updateTask, removeTask } from '@/modules/tasks/tasks.api.js'
 
 export const useTasksStore = defineStore('tasks', {
   state: () => ({
@@ -34,6 +34,7 @@ export const useTasksStore = defineStore('tasks', {
         this.items = await listTasks()
       } catch (e) {
         this.error = e
+        this.items = []
       } finally {
         this.loading = false
       }
