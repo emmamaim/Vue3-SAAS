@@ -18,7 +18,7 @@ function toMinutes(hhmm) {
 // 獲取預約
 export async function listBookings() {
   await delay()
-  mockDB.get().bookings
+  return mockDB.get().bookings
 }
 
 // 新增預約
@@ -72,6 +72,8 @@ export async function updateBooking(id, patch) {
   const start = toMinutes(next.startTime)
   const end = toMinutes(next.endTime)
   const hasConflict = db.bookings.some((b) => {
+    // 排除自己
+    if (b.id === id) return false 
     if (b.date !== next.date) return false
     return overlap(start, end, toMinutes(b.startTime), toMinutes(b.endTime))
   })

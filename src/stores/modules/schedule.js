@@ -29,7 +29,9 @@ export const useScheduleStore = defineStore('schedule', {
       // 顯示 Loading -> 呼叫api獲取資料 →
       // 成功(寫入資料)/失敗(存記錄) -> 最後强制關閉 loading
       try {
-        this.items = await listBookings()
+        // 防呆處理
+        const res = await listBookings()
+        this.items = Array.isArray(res) ? res : []
       } catch (e) {
         this.error = e
       } finally {
