@@ -38,7 +38,7 @@ const createdTrend = computed(() => {
 
   // 統計建立數
   tasksStore.items.forEach((t) => {
-    const date = t.createdAt?.slice(0, 10)
+    const date = t.createAt?.slice(0, 10)
     if (map.has(date)) {
       map.set(date, map.get(date) + 1)
     }

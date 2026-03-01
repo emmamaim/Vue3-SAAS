@@ -18,7 +18,20 @@ export const useScheduleStore = defineStore('schedule', {
       // 防呆處理
       const items = Array.isArray(s.items) ? s.items : []
       const today = new Date().toISOString().slice(0, 10)
-      return items.filter((b) => b.date >= today)
+      // 1. 先過濾出今天及之後的行程
+      return (
+        items
+          .filter((b) => b.date >= today)
+          // 2. 進行排序
+          .sort((a, b) => {
+            // 先比較日期字串 (例如 "2026-03-01" vs "2026-03-02")
+            if (a.date !== b.date) {
+              return a.date.localeCompare(b.date)
+            }
+            // 如果日期相同，比較開始時間 (例如 "09:00" vs "14:00")
+            return a.startTime.localeCompare(b.startTime)
+          })
+      )
     },
   },
   actions: {

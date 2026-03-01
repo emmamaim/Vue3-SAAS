@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-// 接收父組件schedulePage傳來的props
+// 接收父組件SchedulePage傳來的props
 const props = defineProps({
   open: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },

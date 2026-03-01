@@ -23,7 +23,7 @@ export async function createTask(payload) {
     description: payload.description || '',
   }
   // 新任務放在最前面
-  db.task.unshift(task)
+  db.tasks.unshift(task)
   // 寫回 localStorage
   mockDB.set(db)
   // 回傳task (store/page可用)

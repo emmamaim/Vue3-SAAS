@@ -62,17 +62,15 @@ const option = computed(() => {
 
 // 空白處理
 const isEmpty = computed(() => {
-  // 雙重保險: 資料或count空的就true
-  if (!props.data || props.data.length === 0) return true
-  return props.data.every((d) => (d.count ?? 0) <= 0)
+  return !props.data || props.data.length === 0
 })
 </script>
 
 <template>
   <div
-    style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center"
+    style="min-height: 250px; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center"
   >
     <el-empty v-if="isEmpty" description="無任務" />
-    <v-chart v-else :option="option" autoresize style="height: 100%; width: 100%" />
+    <v-chart v-else :option="option" autoresize/>
   </div>
 </template>
