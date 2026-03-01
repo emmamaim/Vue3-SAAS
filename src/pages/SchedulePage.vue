@@ -249,6 +249,7 @@ function openDayDetails(day) {
       :saving="dialogSaving"
       :conflict-msg="conflictMsg"
       :tasks="tasks"
+      :all-bookings="bookings"
       @cancel="closeDialog"
       @submit="handleSubmit"
     />
@@ -264,6 +265,11 @@ function openDayDetails(day) {
   flex-direction: column;
   /* 卡片與卡片之間的間距 */
   gap: 12px;
+}
+
+/* 移除 element-plus 預設 border */
+.schedule-page :deep(.el-calendar-table td.current) {
+  border: none !important;
 }
 
 /* =====================
@@ -396,6 +402,7 @@ function openDayDetails(day) {
   background: rgba(0, 0, 0, 0.02);
   color: var(--el-color-primary);
 }
+
 
 /* =====================
     第二張卡片樣式：選中日期的行程列表 
