@@ -31,7 +31,9 @@ export const useTasksStore = defineStore('tasks', {
       // 顯示 Loading -> 呼叫api獲取資料 →
       // 成功(寫入資料)/失敗(存記錄) -> 最後强制關閉 loading
       try {
-        this.items = await listTasks()
+        const res = await listTasks()
+        this.items = res.data
+        console.log('Store 成功接收陣列:', this.items)
       } catch (e) {
         this.error = e
         this.items = []
@@ -41,14 +43,16 @@ export const useTasksStore = defineStore('tasks', {
     },
     // 新增任務
     async add(payload) {
-      const created = await createTask(payload)
+      const res = await createTask(payload)
+      const created = res.data
       // 需更新this.items 陣列 -> 畫面更新
       this.items.unshift(created)
       return created
     },
     // 更新任務
     async patch(id, patch) {
-      const updated = await updateTask(id, patch)
+      const res = await updateTask(id, patch)
+      const updated = res.data
       const idx = this.items.findIndex((t) => t.id === id)
       if (idx !== -1) this.items[idx] = updated
       return updated
