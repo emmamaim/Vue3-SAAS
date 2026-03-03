@@ -14,7 +14,9 @@ onMounted(async () => {
 })
 
 // 選中的日期（預設為今天）
-const selectedDate = ref(new Date().toISOString().slice(0, 10))
+const now = new Date()
+const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+const selectedDate = ref(todayStr)
 
 // 將store資料包成computed（防止無資料）
 const tasks = computed(() => (Array.isArray(tasksStore.items) ? tasksStore.items : []))
@@ -25,11 +27,13 @@ const bookingsByDate = computed(() => {
   const map = new Map()
   // 先把bookings按照日期分組
   for (const b of bookings.value) {
-    const date = b.date
-    if (!map.has(date)) {
-      map.set(date, [])
+    if (!b.date) continue
+    const dateKey = b.date.slice(0, 10)
+
+    if (!map.has(dateKey)) {
+      map.set(dateKey, [])
     }
-    map.get(date).push(b)
+    map.get(dateKey).push(b)
   }
   // 每個日期內的行程按照時間排序
   for (const arr of map.values()) {
@@ -118,11 +122,14 @@ async function handleSubmit(payload) {
     }
     dialogOpen.value = false
   } catch (e) {
-    if (e?.code === 'BOOKING_CONFLICT') {
-      conflictMsg.value = '時間衝突，請選擇其他時間'
-      return
+    const errorMsg = e.response?.data?.error || e.message || '無法保存行程'
+    // 判斷是否為衝突錯誤
+    if (errorMsg.includes('衝突')) {
+      // 不直接關閉彈窗，彈窗顯示錯誤訊息
+      conflictMsg.value = '時間衝突，請選擇其他時間或使用建議時段'
+    } else {
+      ElMessage.error(errorMsg)
     }
-    ElMessage.error('無法保存行程')
   } finally {
     dialogSaving.value = false
   }
@@ -151,42 +158,25 @@ function openDayDetails(day) {
         <!-- 用插槽自定義日期單元格內容 -->
         <template #date-cell="{ data }">
           <!-- 日期單元格的外框 .cal-cell -->
-          <div
-            class="cal-cell"
-            :class="{ 'is-selected': data.day === selectedDate }"
-            @click="selectedDate = data.day"
-          >
+          <div class="cal-cell" :class="{ 'is-selected': data.day === selectedDate }" @click="selectedDate = data.day">
             <!-- 上半部：日期數字 + 當天行程數量tag -->
             <div class="cal-top">
               <span class="cal-day">
                 {{ Number(data.day.slice(8, 10)) }}
               </span>
-              <el-tag
-                type="info"
-                v-if="(bookingsByDate.get(data.day)?.length ?? 0) > 0"
-                size="small"
-              >
+              <el-tag type="info" v-if="(bookingsByDate.get(data.day)?.length ?? 0) > 0" size="small">
                 {{ bookingsByDate.get(data.day).length }}
               </el-tag>
             </div>
             <!-- 下半部：最多顯示3筆行程資訊 -->
             <div class="cal-slots">
-              <div
-                class="slot"
-                v-for="b in (bookingsByDate.get(data.day) ?? []).slice(0, 3)"
-                :key="b.id"
-                @click.stop="openEdit(b)"
-                :title="`${b.startTime} ${b.title}`"
-              >
+              <div class="slot" v-for="b in (bookingsByDate.get(data.day) ?? []).slice(0, 3)" :key="b.id"
+                @click.stop="openEdit(b)" :title="`${b.startTime} ${b.title}`">
                 <span class="slot-time">{{ b.startTime }}</span>
                 <span class="slot-title">{{ b.title }}</span>
               </div>
-              <button
-                v-if="(bookingsByDate.get(data.day)?.length ?? 0) > 3"
-                type="button"
-                class="slot more"
-                @click.stop="openDayDetails(data.day)"
-              >
+              <button v-if="(bookingsByDate.get(data.day)?.length ?? 0) > 3" type="button" class="slot more"
+                @click.stop="openDayDetails(data.day)">
                 +{{ bookingsByDate.get(data.day).length - 3 }}
               </button>
             </div>
@@ -215,12 +205,8 @@ function openDayDetails(day) {
           <div class="day-item__time">
             <div class="time">{{ b.startTime }} - {{ b.endTime }}</div>
             <!-- confirmed -> 綠色 / pending -> 黃色 / canceled -> 灰色 -->
-            <el-tag
-              size="small"
-              :type="
-                b.status === 'confirmed' ? 'success' : b.status === 'pending' ? 'warning' : 'info'
-              "
-            >
+            <el-tag size="small" :type="b.status === 'confirmed' ? 'success' : b.status === 'pending' ? 'warning' : 'info'
+              ">
               {{ b.status }}
             </el-tag>
           </div>
@@ -242,17 +228,9 @@ function openDayDetails(day) {
         </div>
       </div>
     </el-card>
-    <BookingDialog
-      :open="dialogOpen"
-      :mode="dialogMode"
-      :initial="dialogInitial"
-      :saving="dialogSaving"
-      :conflict-msg="conflictMsg"
-      :tasks="tasks"
-      :all-bookings="bookings"
-      @cancel="closeDialog"
-      @submit="handleSubmit"
-    />
+    <BookingDialog :open="dialogOpen" :mode="dialogMode" :initial="dialogInitial" :saving="dialogSaving"
+      :conflict-msg="conflictMsg" :tasks="tasks" :all-bookings="bookings" @cancel="closeDialog"
+      @submit="handleSubmit" />
   </div>
 </template>
 
@@ -343,6 +321,7 @@ function openDayDetails(day) {
   justify-content: space-between;
   align-items: center;
 }
+
 .cal-day {
   font-weight: 700;
 }
@@ -371,6 +350,7 @@ function openDayDetails(day) {
   cursor: pointer;
   overflow: hidden;
 }
+
 .slot:hover {
   border-color: var(--el-color-primary);
 }
@@ -441,6 +421,7 @@ function openDayDetails(day) {
   flex-direction: column;
   gap: 6px;
 }
+
 .day-item__time .time {
   font-weight: 700;
 }
@@ -450,9 +431,11 @@ function openDayDetails(day) {
   flex: 1;
   min-width: 0;
 }
+
 .day-item__body .title {
   font-weight: 700;
 }
+
 .day-item__body .meta {
   margin-top: 4px;
   font-size: 12px;
@@ -474,35 +457,43 @@ function openDayDetails(day) {
      ============*/
 /* 桌機 */
 @media (min-width: 992px) {
+
   /* 日期格子更大 */
   .schedule-page :deep(.el-calendar-table .el-calendar-day) {
     height: 160px;
   }
 }
+
 /* 手機 */
 @media (max-width: 768px) {
+
   /* 日期格子較小且slot變小 */
   .schedule-page :deep(.el-calendar-table .el-calendar-day) {
     height: 120px;
   }
+
   .cal-cell {
     padding: 8px;
     gap: 6px;
   }
+
   .slot {
     height: 26px;
     font-size: 11px;
   }
+
   /* 行程列表改為上下排列 */
   .day-item {
     flex-direction: column;
   }
+
   .day-item__time {
     width: auto;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
+
   .day-item__actions {
     justify-content: flex-end;
   }

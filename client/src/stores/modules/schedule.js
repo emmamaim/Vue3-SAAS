@@ -24,12 +24,8 @@ export const useScheduleStore = defineStore('schedule', {
           .filter((b) => b.date >= today)
           // 2. 進行排序
           .sort((a, b) => {
-            // 先比較日期字串 (例如 "2026-03-01" vs "2026-03-02")
-            if (a.date !== b.date) {
-              return a.date.localeCompare(b.date)
-            }
-            // 如果日期相同，比較開始時間 (例如 "09:00" vs "14:00")
-            return a.startTime.localeCompare(b.startTime)
+            // 後端CHAR(5)格式統一
+            return a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
           })
       )
     },
@@ -42,33 +38,48 @@ export const useScheduleStore = defineStore('schedule', {
       // 顯示 Loading -> 呼叫api獲取資料 →
       // 成功(寫入資料)/失敗(存記錄) -> 最後强制關閉 loading
       try {
-        // 防呆處理
-        const res = await listBookings()
-        this.items = Array.isArray(res) ? res : []
+        const { data } = await listBookings()
+        this.items = data
       } catch (e) {
-        this.error = e
+        this.error = e.response?.data?.error || '無法讀取資料'
+        this.items = []
       } finally {
         this.loading = false
       }
     },
     // 新增預約
     async add(payload) {
-      const created = await createBooking(payload)
-      // 需更新this.items 陣列 -> 畫面更新
-      this.items.unshift(created)
-      return created
+      try {
+        const { data } = await createBooking(payload)
+        // 需更新this.items 陣列 -> 畫面更新
+        this.items.unshift(data)
+        return data
+      } catch (e) {
+        throw e.response?.data?.error || '新增失敗'
+      }
     },
     // 更新預約
     async patch(id, patch) {
-      const updated = await updateBooking(id, patch)
-      const idx = this.items.findIndex((t) => t.id === id)
-      if (idx !== -1) this.items[idx] = updated
-      return updated
+      try {
+        const { data } = await updateBooking(id, patch)
+        const idx = this.items.findIndex((t) => t.id === id)
+        if (idx !== -1) {
+          // splice(開始操作的位置，刪除元素個數，插入的新資料)
+          this.items.splice(idx, 1, data)
+        }
+        return data
+      } catch (e) {
+        throw e.response?.data?.error || '更新失敗'
+      }
     },
     // 刪除預約
     async remove(id) {
-      await removeBooking(id)
-      this.items = this.items.filter((p) => p.id !== id)
+      try {
+        await removeBooking(id)
+        this.items = this.items.filter((p) => p.id !== id)
+      } catch (e) {
+        throw e.response?.data?.error || '刪除失敗'
+      }
     },
   },
 })

@@ -5,35 +5,19 @@ const cors = require("cors");
 const db = require("./config/db");
 require("dotenv").config();
 // 引入路由
-const taskRoutes = require('./routes/taskRoutes');
+const taskRoutes = require("./routes/taskRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
 const app = express();
 
 // 中間件設定
 app.use(cors());
 app.use(express.json());
 
-// 註冊路徑：將所有 /api/tasks 的請求導向 taskRoutes
-app.use('/api/tasks', taskRoutes);
+// 註冊路徑
+app.use("/api/tasks", taskRoutes);
+app.use("/api/bookings", bookingRoutes);
 
-// 測試資料庫連線的 API
-// app.get("/api/test-db", async (req, res) => {
-//   try {
-//     // 抓取資料
-//     const [rows] = await db.query("SELECT * FROM tasks");
-//     res.json({
-//       message: "資料庫連線成功！",
-//       data: rows,
-//     });
-//   } catch (err) {
-//     // 連線失敗: 回傳錯誤訊息
-//     res.status(500).json({
-//       error: "資料庫讀取失敗",
-//       details: err.message,
-//     });
-//   }
-// });
-
-const PORT = process.env.PROT || 3000;
-app.listen(3000, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
   console.log(`後端伺服器運作中：http://localhost:${PORT}`);
 });

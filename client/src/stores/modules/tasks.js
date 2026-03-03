@@ -33,7 +33,6 @@ export const useTasksStore = defineStore('tasks', {
       try {
         const res = await listTasks()
         this.items = res.data
-        console.log('Store 成功接收陣列:', this.items)
       } catch (e) {
         this.error = e
         this.items = []

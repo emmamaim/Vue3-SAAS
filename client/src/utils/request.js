@@ -10,7 +10,6 @@ const service = axios.create({
 // Request 攔截器(請求前token驗證)
 service.interceptors.request.use(
   function (config) {
-    console.log('--- 請求發送中 ---', config.url)
     return config
   },
   function (error) {

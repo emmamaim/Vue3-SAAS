@@ -181,7 +181,12 @@ async function onSubmit() {
   // 第二步：組出同一天已預約的時間區間
   const blocks = (props.allBookings || [])
     // 過濾出同一天的行程
-    .filter((b) => b?.date === form.date)
+    .filter((b) => {
+      if (!b?.date) return false
+      // 切掉 ISO 尾巴，確保比對的是 "2026-03-03"
+      const bDate = b.date.slice(0, 10)
+      return bDate === form.date
+    })
     // 過濾掉目前編輯中的行程
     .filter((b) => b?.id !== props.initial?.id)
     // 格式轉換：{ startTime: "09:00", endTime: "10:00" } => { s: 540, e: 600 }
@@ -237,21 +242,10 @@ async function onSubmit() {
 }
 </script>
 <template>
-  <el-dialog
-    :model-value="open"
-    :title="mode === 'create' ? '新增行程' : '編輯行程'"
-    width="560px"
-    @close="onCancel"
-  >
+  <el-dialog :model-value="open" :title="mode === 'create' ? '新增行程' : '編輯行程'" width="560px" @close="onCancel">
     <!-- 衝突訊息 -->
-    <el-alert
-      v-if="conflictMsg"
-      :title="conflictMsg"
-      type="error"
-      :closable="false"
-      show-icon
-      style="margin-bottom: 12px"
-    />
+    <el-alert v-if="conflictMsg" :title="conflictMsg" type="error" :closable="false" show-icon
+      style="margin-bottom: 12px" />
     <!-- 表單區 -->
     <el-form ref="formRef" :model="form" label-width="100px" :rules="rules" status-icon>
       <!-- 標題 -->
@@ -260,24 +254,13 @@ async function onSubmit() {
       </el-form-item>
       <!-- 日期 -->
       <el-form-item label="日期" prop="date">
-        <el-date-picker
-          v-model="form.date"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="請選擇日期"
-          style="width: 100%"
-        />
+        <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" placeholder="請選擇日期"
+          style="width: 100%" />
       </el-form-item>
       <!-- 開始時間 -->
       <el-form-item label="開始時間" prop="startTime">
-        <el-time-select
-          v-model="form.startTime"
-          start="08:00"
-          step="00:30"
-          end="20:00"
-          placeholder="請選擇開始時間"
-          style="width: 100%"
-        />
+        <el-time-select v-model="form.startTime" start="08:00" step="00:30" end="20:00" placeholder="請選擇開始時間"
+          style="width: 100%" />
       </el-form-item>
       <!-- 時長（新增） -->
       <el-form-item label="時長" prop="durationMin">
@@ -290,10 +273,7 @@ async function onSubmit() {
       <!-- 結束時間（改成唯讀顯示） -->
       <el-form-item label="結束時間" prop="endTime">
         <el-input v-model="form.endTime" disabled placeholder="會依開始時間＋時長自動計算" />
-        <div
-          v-if="endOutOfRange"
-          style="margin-top: 6px; font-size: 12px; color: var(--el-color-danger)"
-        >
+        <div v-if="endOutOfRange" style="margin-top: 6px; font-size: 12px; color: var(--el-color-danger)">
           結束時間超出 20:30，請改選更早開始時間或縮短時長
         </div>
       </el-form-item>
@@ -315,9 +295,7 @@ async function onSubmit() {
     <!-- footer區：取消 / 儲存按鈕 -->
     <template #footer>
       <el-button @click="onCancel">取消</el-button>
-      <el-button @click="onSubmit" type="primary" :loading="saving" :disabled="endOutOfRange"
-        >儲存</el-button
-      >
+      <el-button @click="onSubmit" type="primary" :loading="saving" :disabled="endOutOfRange">儲存</el-button>
     </template>
   </el-dialog>
 </template>

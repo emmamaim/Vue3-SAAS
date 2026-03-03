@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 任务列表
 export async function listTasks() {
   return request({
-    url: '/tasks', // 我們目前的測試路徑
+    url: '/tasks',
     method: 'get',
   })
 }
