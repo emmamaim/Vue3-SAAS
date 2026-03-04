@@ -2,52 +2,77 @@ CREATE DATABASE IF NOT EXISTS vue3_saas_db CHARACTER SET utf8mb4 COLLATE utf8mb4
 
 USE vue3_saas_db;
 
--- 建立任務表
-CREATE TABLE IF NOT EXISTS tasks (
+-- 建立用戶表
+-- 超級管理員admin無隸屬部門或創建人
+CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    status ENUM('todo', 'doing', 'done') NOT NULL DEFAULT 'todo',
-    priority ENUM('high', 'medium', 'low') NOT NULL DEFAULT 'medium',
-    description TEXT,
-    dueDate DATETIME,
-    createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    real_name VARCHAR(50) NOT NULL,
+    role ENUM('super_admin', 'dept_hr', 'interviewer') NOT NULL,
+    dept VARCHAR(50) DEFAULT NULL,
+    created_by VARCHAR(50) DEFAULT NULL,
+    status ENUM('active', 'disabled') DEFAULT 'active',
+    last_login DATETIME DEFAULT NULL,
+    createAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updateAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
--- 建立行程表
-CREATE TABLE IF NOT EXISTS bookings (
-    id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    date DATE NOT NULL,
-    startTime CHAR(5) NOT NULL,
-    endTime CHAR(5) NOT NULL,
-    status ENUM('pending', 'confirmed', 'canceled') NOT NULL DEFAULT 'confirmed',
-    relatedTaskId VARCHAR(50) NULL,
-    createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_related_task 
-    FOREIGN KEY (relatedTaskId) REFERENCES tasks (id) 
-    ON DELETE SET NULL
-);
+    CONSTRAINT fk_user_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 原始資料(測試)
-INSERT INTO tasks (id, title, status, priority, description, dueDate)
-VALUES 
-    ('t_1', '早餐', 'todo', 'medium', 'breakfast', '2026-03-05 08:00:00'),
-    ('t_2', '工作會議', 'doing', 'high', 'meeting', '2026-03-08 10:00:00'),
-    ('t_3', '看書', 'done', 'low', 'reading', '2026-03-04 15:00:00');
+-- 超級管理員
+INSERT INTO users (id, username, password, real_name, role, dept) 
+VALUES ('u_admin_001', 'admin', 'your_secure_password', '系統管理員', 'super_admin', 'Management');
+-- 技術部HR
+INSERT INTO users (id, username, password, real_name, role, dept) 
+VALUES ('u_hr_001', 'amy_hr', 'hashed_pwd_123', '艾米', 'dept_hr', 'Tech');
+-- 技術部面試官
+INSERT INTO users (id, username, password, real_name, role, dept) 
+VALUES ('u_int_001', 'kevin_tech', 'hashed_pwd_456', '凱文', 'interviewer', 'Tech');
 
-INSERT INTO bookings (id, title, date, startTime, endTime, status, relatedTaskId)
-VALUES 
-    ('b_1', '測試1', '2026-03-03', '10:00', '11:00', 'confirmed', NULL),
-    ('b_2', '測試2', '2026-03-04', '10:00', '11:00', 'confirmed', NULL),
-    ('b_3', '測試3', '2026-03-05', '10:00', '11:00', 'confirmed', NULL),
-    ('b_4', '測試4', '2026-03-06', '10:00', '11:00', 'confirmed', NULL);
+-- 建立候選人表
+CREATE TABLE IF NOT EXISTS candidates (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    dept VARCHAR(50) NOT NULL,
+    status ENUM('pending','interviewing','hired','rejected') DEFAULT 'pending',
+    hr_id VARCHAR(50),
+    createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_candidate_hr FOREIGN KEY (hr_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 候選人
+INSERT INTO candidates (id, name, position, email, dept, status, hr_id) VALUES ('c_test_001', '張小明', 'Frontend Engineer', 'xiaoming@example.com', 'Tech', 'interviewing', 'u_hr_001');
+
+-- 建立面試表
+CREATE TABLE IF NOT EXISTS interviews (
+    id VARCHAR(50) PRIMARY KEY,
+    candidate_id VARCHAR(50) NOT NULL,
+    interviewer_id VARCHAR(50) NOT NULL,
+    hr_id VARCHAR(50) NOT NULL,
+    interview_round TINYINT DEFAULT 1,
+    date DATE NOT NULL,
+    startTime TIME NOT NULL,
+    endTime TIME NOT NULL,
+    location VARCHAR(255) DEFAULT 'Remote / Online',
+    rating TINYINT DEFAULT NULL,
+    comments TEXT DEFAULT NULL,
+    status ENUM('scheduled', 'completed', 'cancelled') DEFAULT 'scheduled',
+    CONSTRAINT fk_int_candidate FOREIGN KEY (candidate_id) REFERENCES candidates (id) ON DELETE CASCADE,
+    CONSTRAINT fk_int_interviewer FOREIGN KEY (interviewer_id) REFERENCES users (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_int_hr FOREIGN KEY (hr_id) REFERENCES users (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 面試
+INSERT INTO interviews (id, candidate_id, interviewer_id, hr_id, interview_round, date, startTime, endTime, location, status) VALUES ('int_test_002', 'c_test_001', 'u_int_001','u_hr_001', 1, '2026-03-12', '10:30:00', '11:30:00', 'Google Meet (meet.google.com/abc-defg-hij)', 'scheduled');
+
+
+
 
 -- 刪除資料表
-DROP TABLE bookings;
-DROP TABLE tasks;
-
--- 防止資料污染
-TRUNCATE TABLE bookings;
-  
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS interviews;
