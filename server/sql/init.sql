@@ -23,13 +23,13 @@ CREATE TABLE IF NOT EXISTS users (
 -- 原始資料(測試)
 -- 超級管理員
 INSERT INTO users (id, username, password, real_name, role, dept) 
-VALUES ('u_admin_001', 'admin', 'your_secure_password', '系統管理員', 'super_admin', 'Management');
+VALUES ('u_admin_001', 'admin', '$2b$10$8WE/v2cYV1rXidQFCKpzuOMnkXosz3sdv5l8irnTaGqdf.oTEDo8K', '系統管理員', 'super_admin', 'Management');
 -- 技術部HR
 INSERT INTO users (id, username, password, real_name, role, dept) 
-VALUES ('u_hr_001', 'amy_hr', 'hashed_pwd_123', '艾米', 'dept_hr', 'Tech');
+VALUES ('u_hr_001', 'amy_hr', '$2b$10$f51/KA0akJQzUUzjjn12T.cpbJl/jWxA8mx8kFkh716.bEG3jo6y.', '艾米', 'dept_hr', 'Tech');
 -- 技術部面試官
 INSERT INTO users (id, username, password, real_name, role, dept) 
-VALUES ('u_int_001', 'kevin_tech', 'hashed_pwd_456', '凱文', 'interviewer', 'Tech');
+VALUES ('u_int_001', 'kevin_tech', '$2b$10$aIBtBo4d7ivYAErIKvoAYubXT715Pg4Dj4/30v3e7/3jnBn2HQxju', '凱文', 'interviewer', 'Tech');
 
 -- 建立候選人表
 CREATE TABLE IF NOT EXISTS candidates (

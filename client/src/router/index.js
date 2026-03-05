@@ -40,7 +40,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const hasToken = !!userStore.token
-  const userRole = userStore.userInfo?.role
+  const role = userStore.userInfo?.role
   // 1.token不存在
   if (to.meta.requiresAuth && !hasToken) {
     next('/login')
@@ -50,7 +50,7 @@ router.beforeEach((to, from, next) => {
     next('/')
   }
   // 3.登入權限不足
-  else if (to.meta.role && to.meta.role !== userRole) {
+  else if (to.meta.role && to.meta.role !== role) {
     ElMessage.warning('權限不足')
     next('/')
   } else {

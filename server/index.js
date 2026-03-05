@@ -5,7 +5,7 @@ const cors = require("cors");
 const db = require("./config/db");
 require("dotenv").config();
 // 引入路由
-const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 
@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // 註冊路徑
-app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/bookings", bookingRoutes);
 

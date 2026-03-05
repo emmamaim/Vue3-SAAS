@@ -15,7 +15,6 @@ const formModel = ref({
     username: '',
     password: '',
 })
-
 // 數據規則綁定
 const rules = {
     username: [
@@ -44,7 +43,13 @@ const login = async () => {
         await form.value.validate()
         await userStore.login(formModel.value)
         ElMessage.success('登入成功')
-        router.push('/')
+        // 動態跳轉
+        const role = userStore.userInfo.role
+        if (role === 'admin') {
+            router.push('/users')
+        } else {
+            router.push('/dashboard')
+        }
     } catch {
         //攔截器處理錯誤信息
     }

@@ -1,44 +1,107 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores'
+import { Menu as IconMenu, Calendar, DataBoard, Expand, Fold, UserFilled, ArrowDown, SwitchButton, List, User } from '@element-plus/icons-vue'
 
-// 路由物件
+// 建立store / router / route 實例
+const userStore = useUserStore()
+const router = useRouter()
 const route = useRoute()
+//sidebar 收縮
+const isCollapse = ref(false)
+console.log('當前用戶角色:', userStore.userInfo?.role)
 // 切換路由後自動更新 -> el-menu高亮
 const activePath = computed(() => route.path)
-// 定義切換路由後顯示的文字
+// 動態標題
 const title = computed(() => {
   const map = {
     '/dashboard': '儀表板',
-    '/tasks': '任務看板',
-    '/schedule': '行事曆',
+    '/users': '用戶管理',
+    '/tasks': '候選人',
+    '/schedule': '面試管理',
   }
   // 考慮fallback -> 防止加新路由時候標題變空白
   return map[route.path] ?? 'WorkHub'
 })
+
+// 登出
+const handleLogout = () => {
+  userStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
   <el-container class="app-shell">
-    <!-- 左方 aside -->
-    <el-aside width="220px" class="app-aside">
-      <div class="brand">工作管理平台</div>
-      <el-menu :default-active="activePath" class="app-menu" router>
-        <el-menu-item index="/dashboard">儀表板</el-menu-item>
-        <el-menu-item index="/tasks">任務看板</el-menu-item>
-        <el-menu-item index="/schedule">行事曆</el-menu-item>
+    <el-aside :width="isCollapse ? '64px' : '220px'" class="app-aside">
+      <div class="brand">
+        <el-icon v-if="isCollapse" size="24px">
+          <IconMenu />
+        </el-icon>
+        <span v-else>工作管理平台</span>
+      </div>
+
+      <el-menu :default-active="activePath" class="app-menu" :collapse="isCollapse" :collapse-transition="false" router>
+        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/users">
+          <el-icon>
+            <User />
+          </el-icon>
+          <template #title>用戶管理</template>
+        </el-menu-item>
+        <el-menu-item index="/dashboard">
+          <el-icon>
+            <DataBoard />
+          </el-icon>
+          <template #title>儀表板</template>
+        </el-menu-item>
+        <el-menu-item index="/tasks">
+          <el-icon>
+            <List />
+          </el-icon>
+          <template #title>候選人</template>
+        </el-menu-item>
+        <el-menu-item index="/schedule">
+          <el-icon>
+            <Calendar />
+          </el-icon>
+          <template #title>面試管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
-    <!-- 右方 header & main -->
+
     <el-container>
       <el-header class="app-header">
         <div class="header-left">
-          {{ title }}
+          <el-icon class="collapse-btn" @click="isCollapse = !isCollapse">
+            <Expand v-if="isCollapse" />
+            <Fold v-else />
+          </el-icon>
+          <span class="breadcrumb-text">{{ title }}</span>
         </div>
+
         <div class="header-right">
-          <el-button size="small">使用者</el-button>
+          <el-dropdown>
+            <span class="user-info">
+              <el-avatar :size="32" :icon="UserFilled" />
+              <span class="username">{{ userStore.userInfo?.username || '使用者' }}</span>
+              <el-icon>
+                <ArrowDown />
+              </el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="handleLogout">
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon>退出登入
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
+
       <el-main class="app-main">
         <router-view />
       </el-main>
@@ -48,31 +111,100 @@ const title = computed(() => {
 
 <style scoped>
 .app-shell {
-  /* 100%視窗高度 */
-  min-height: 100vh;
+  height: 100vh;
 }
+
 .app-aside {
-  /* 加右邊框->分隔aside和內容區 */
-  border-right: 1px solid var(--el-border-color);
-  background: #fff;
+  background-color: #fff;
+  border-right: 1px solid var(--el-border-color-light);
+  transition: width 0.3s;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
 }
+
 .brand {
-  height: 56px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--el-color-primary);
+  border-bottom: 1px solid var(--el-border-color-extra-light);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.app-menu {
+  border-right: none;
+}
+
+:deep(.el-menu-item) {
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  font-weight: 700;
-  font-size: large;
+  justify-content: center;
+  padding: 0 !important;
 }
+
+.el-menu-item .el-icon {
+  margin-right: 12px;
+  transition: margin 0.3s;
+  font-size: 18px;
+}
+
+:deep(.el-menu--collapse .el-menu-item) {
+  justify-content: center;
+}
+
+:deep(.el-menu--collapse .el-menu-item .el-icon) {
+  margin-right: 0;
+}
+
+:deep(.el-menu-item span) {
+  transition: opacity 0.3s;
+}
+
 .app-header {
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  /* 加底邊框->分隔header和main(router-view) */
-  border-bottom: 1px solid var(--el-border-color);
+  padding: 0 20px;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.collapse-btn {
+  font-size: 20px;
+  cursor: pointer;
+  color: #606266;
+}
+
+.breadcrumb-text {
+  font-size: 14px;
+  color: #606266;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  outline: none;
+}
+
+.username {
+  font-size: 14px;
+}
+
 .app-main {
-  background: #f5f7fa;
+  background: #f0f2f5;
+  padding: 20px;
 }
 </style>

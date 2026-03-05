@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { userLoginService, userRegisterService } from '@/api/users'
+import { userLoginService, userCreateService } from '@/api/users'
 
 export const useUserStore = defineStore('users', {
   state: () => ({
@@ -9,7 +9,7 @@ export const useUserStore = defineStore('users', {
   actions: {
     // 注冊（管理員）
     async register(registerData) {
-      const res = await userRegisterService(registerData)
+      const res = await userCreateService(registerData)
       return res
     },
     // 登入
