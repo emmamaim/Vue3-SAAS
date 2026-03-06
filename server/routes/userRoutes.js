@@ -1,8 +1,8 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const userController = require("../controllers/userController");
+import * as userController from "../controllers/userController.js";
 // JWT 驗證中介軟體（確保只有登入者能查）
-const { authenticateToken, isAdmin } = require("../middleware/authMiddleware");
+import { authenticateToken, isAdmin } from "../middleware/authMiddleware.js";
 
 // 定義路徑與對應的controller函式
 router.post("/login", userController.login);
@@ -16,4 +16,4 @@ router.patch(
   userController.toggleUserStatus,
 );
 
-module.exports = router;
+export default router;

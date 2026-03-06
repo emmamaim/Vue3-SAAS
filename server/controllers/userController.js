@@ -1,14 +1,13 @@
-// 連接資料庫
-const db = require("../config/db");
+import db from "../config/db.js";
 // 密碼加密與驗證
-const bcrypt = require("bcrypt");
+import bcrypt from "bcrypt";
 // 生成與驗證 JSON Web Token (JWT)
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 // 生成隨機ID
-const crypto = require("crypto");
+import crypto from "node:crypto";
 
 // 登入
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   const { username, password } = req.body;
   try {
     // 1.檢查賬號是否存在
@@ -56,7 +55,7 @@ exports.login = async (req, res) => {
 };
 
 // 獲取用戶列表
-exports.getUserList = async (req, res) => {
+export const getUserList = async (req, res) => {
   try {
     // 分頁 / 篩選分類功能設定
     const page = parseInt(req.query.page) || 1;
@@ -107,7 +106,7 @@ exports.getUserList = async (req, res) => {
 };
 
 // 新增用戶
-exports.createUser = async (req, res) => {
+export const createUser = async (req, res) => {
   const { username, password, real_name, role, dept } = req.body;
   // 嚴格校驗必填欄位
   if (!username || !password || !real_name || !role || !dept) {
@@ -145,7 +144,7 @@ exports.createUser = async (req, res) => {
 };
 
 // 更新用戶信息
-exports.updateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { username, real_name, role, dept, password } = req.body;
   try {
@@ -175,7 +174,7 @@ exports.updateUser = async (req, res) => {
 };
 
 // 停用/啓用用戶（軟刪除）
-exports.toggleUserStatus = async (req, res) => {
+export const toggleUserStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const adminId = req.user.id;

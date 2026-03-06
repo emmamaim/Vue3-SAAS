@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { Search, Plus } from '@element-plus/icons-vue';
+import { Search, Plus, RefreshLeft } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { userListService, userUpdateStatusService } from '@/api/users';
 import UserDialog from './components/UserDialog.vue';
@@ -19,7 +19,15 @@ const queryParams = reactive({
   role: '',
   status: ''
 })
-
+// 部門選項
+const deptOptions = [
+  { label: '管理層', value: 'Management' },
+  { label: '技術部', value: 'Tech' },
+  { label: '人力資源部', value: 'HR' },
+  { label: '產品部', value: 'Product' },
+  { label: '營運部', value: 'Operations' },
+  { label: '市場部', value: 'Marketing' }
+]
 // 獲取用戶列表
 const getUserList = async () => {
   loading.value = true
@@ -40,7 +48,14 @@ const handleQuery = () => {
   queryParams.page = 1
   getUserList()
 }
-
+// 重置搜尋條件
+const handleReset = () => {
+  queryParams.dept = ''
+  queryParams.role = ''
+  queryParams.status = ''
+  queryParams.page = 1
+  getUserList()
+}
 // 新增用戶
 const handleAdd = () => {
   // 清空當前行資料
@@ -92,7 +107,9 @@ onMounted(() => {
     <el-card class="filter-card">
       <el-form :inline="true" :model="queryParams" class="filter-form">
         <el-form-item label="部門">
-          <el-input v-model="queryParams.dept" placeholder="請輸入部門名稱" clearable @keyup.enter="handleQuery" />
+          <el-select v-model="queryParams.dept" placeholder="請輸入部門名稱" clearable style="width: 150px;">
+            <el-option v-for="item in deptOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="queryParams.role" placeholder="全部角色" clearable style="width: 150px">
@@ -107,10 +124,15 @@ onMounted(() => {
               <Search />
             </el-icon> 查詢
           </el-button>
+          <el-button @click="handleReset">
+            <el-icon>
+              <RefreshLeft /> 
+            </el-icon>重置
+          </el-button>
           <el-button type="success" @click="handleAdd">
             <el-icon>
               <Plus />
-            </el-icon> 新增用戶
+            </el-icon> 新增
           </el-button>
         </el-form-item>
       </el-form>

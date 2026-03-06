@@ -1,7 +1,7 @@
-const db = require("../config/db");
+import db from "../config/db.js";
 
 // 獲取任務
-exports.getAllTasks = async (req, res) => {
+export const getAllTasks = async (req, res) => {
   try {
     const [rows] = await db.execute(
       "SELECT * FROM tasks ORDER BY createAt DESC",
@@ -13,7 +13,7 @@ exports.getAllTasks = async (req, res) => {
 };
 
 // 新增任務
-exports.createTasks = async (req, res) => {
+export const createTasks = async (req, res) => {
   const { title, status, priority, description, dueDate } = req.body;
   // 生成隨機ID
   const id = "t_" + Date.now();
@@ -28,7 +28,7 @@ exports.createTasks = async (req, res) => {
 };
 
 // 更新任務
-exports.updateTask = async (req, res) => {
+export const updateTask = async (req, res) => {
   // 任務ID以及需要更新的内容
   const { id } = req.params;
   const patch = req.body;
@@ -61,7 +61,7 @@ exports.updateTask = async (req, res) => {
 };
 
 // 刪除任務
-exports.removeTask = async (req, res) => {
+export const removeTask = async (req, res) => {
   // 任務ID
   const { id } = req.params;
   try {

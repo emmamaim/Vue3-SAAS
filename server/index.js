@@ -1,24 +1,32 @@
-const express = require("express");
+import express from "express";
 // 引入cors: 允許來自 Vue 前端的請求進入
-const cors = require("cors");
-// 引入資料庫連線設定
-const db = require("./config/db");
-require("dotenv").config();
-// 引入路由
-const userRoutes = require("./routes/userRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const bookingRoutes = require("./routes/bookingRoutes");
+import cors from "cors";
+import "dotenv/config";
+import path from "path";
+import { fileURLToPath } from "url";
+// 引入資料庫和路由
+import db from "./config/db.js";
+import userRoutes from "./routes/userRoutes.js";
+import taskRoutes from "./routes/taskRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import candidateRoutes from "./routes/candidateRoutes.js";
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 中間件設定
 app.use(cors());
 app.use(express.json());
 
+// 靜態檔案服務 => 直接打開pdf履歷
+app.use("/resumes", express.static(path.join(__dirname, "uploads")));
+
 // 註冊路徑
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/candidates", candidateRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

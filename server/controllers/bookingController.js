@@ -1,7 +1,7 @@
-const db = require("../config/db");
+import db from "../config/db.js";
 
 // 獲取預約
-exports.getAllBookings = async (req, res) => {
+export const getAllBookings = async (req, res) => {
   try {
     // 時間格式化
     const sql = `SELECT id, title, DATE_FORMAT(date, '%Y-%m-%d') as date, startTime, endTime, status, relatedTaskId, createAt, updateAt FROM bookings ORDER BY createAt DESC`;
@@ -13,7 +13,7 @@ exports.getAllBookings = async (req, res) => {
 };
 
 // 新增預約
-exports.createBooking = async (req, res) => {
+export const createBooking = async (req, res) => {
   const { title, date, startTime, endTime, status, relatedTaskId } = req.body;
   // 生成隨機ID
   const id = "b_" + Date.now();
@@ -59,7 +59,7 @@ exports.createBooking = async (req, res) => {
 };
 
 // 更新預約
-exports.updateBooking = async (req, res) => {
+export const updateBooking = async (req, res) => {
   // 預約ID以及需要更新的内容
   const { id } = req.params;
   const patch = req.body;
@@ -124,7 +124,7 @@ exports.updateBooking = async (req, res) => {
 };
 
 //刪除預約
-exports.removeBooking = async (req, res) => {
+export const removeBooking = async (req, res) => {
   const { id } = req.params;
   try {
     await db.execute("DELETE FROM bookings WHERE id = ?", [id]);

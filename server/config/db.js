@@ -1,6 +1,6 @@
-const mysql = require("mysql2");
+import mysql from "mysql2/promise";
 // 載入.env設定
-require("dotenv").config();
+import "dotenv/config"
 
 // rocess.env.XXX: Node.js 讀取 .env 檔案內容
 const pool = mysql.createPool({
@@ -17,7 +17,4 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// 轉爲Promise版本 => 後續async/await
-const promisePool = pool.promise();
-
-module.exports = promisePool;
+export default pool;

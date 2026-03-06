@@ -18,7 +18,7 @@ const title = computed(() => {
   const map = {
     '/dashboard': '儀表板',
     '/users': '用戶管理',
-    '/tasks': '候選人',
+    '/tasks': '應徵者',
     '/schedule': '面試管理',
   }
   // 考慮fallback -> 防止加新路由時候標題變空白
@@ -59,7 +59,7 @@ const handleLogout = () => {
           <el-icon>
             <List />
           </el-icon>
-          <template #title>候選人</template>
+          <template #title>應徵者</template>
         </el-menu-item>
         <el-menu-item index="/schedule">
           <el-icon>

@@ -1,7 +1,7 @@
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 // token檢查
-const authenticateToken = (req, res, next) => {
+export const authenticateToken = (req, res, next) => {
   // 從Header抓取token
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -18,12 +18,10 @@ const authenticateToken = (req, res, next) => {
 };
 
 // role檢查
-const isAdmin = (req, res, next) => {
+export const isAdmin = (req, res, next) => {
   const { role } = req.user;
   if (role !== "super_admin") {
     return res.status(403).json({ message: "權限不足，僅限管理員操作" });
   }
   next();
 };
-
-module.exports = { authenticateToken, isAdmin };
