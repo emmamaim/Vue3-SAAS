@@ -1,55 +1,141 @@
-import db from "../config/db.js";
+import db from '../config/db.js';
 
-// 組裝應徵者資料，包含基本資訊和面試歷史
-export const getFullCandidateInfo = async (id) => {
-  // 1.獲取應徵者基本資料
-  const [basicInfo] = await db.execute(
-    "SELECT * FROM candidates WHERE id = ?",
-    [id],
-  );
-  if (basicInfo.length === 0) return null;
-  // 2.獲取此人的面試記錄
-  const [interviews] = await db.execute(
-    "SELECT * FROM interviews WHERE candidate_id = ? ORDER BY interview_round DESC",
-    [id],
-  );
-  // 3.根據面試官ID獲取面試官姓名
-  const interviewersIds = [...new Set(interviews.map((i) => i.interviewer_id))];
-  if (interviewersIds.length > 0) {
-    const [users] = await db.query(
-      "SELECT id, real_name FROM users WHERE id IN (?)",
-      [interviewersIds],
+const CandidateModel = {
+  // 查詢應徵者列表（多表關聯查詢）
+  getAll: async ({
+    page,
+    pageSize,
+    keyword,
+    dept_id,
+    source_id,
+    status,
+    category_id,
+    hr_id
+  }) => {
+    const limit = parseInt(pageSize) || 10;
+    const offset = (parseInt(page) - 1) * limit;
+    let params = [];
+    // 基礎sql：JOIN 所有的名稱表
+    let sql = `
+      SELECT c.*, 
+             d.name as dept_name, 
+             s.name as source_name, 
+             jc.name as category_name,
+             j.job_name as position_name,
+             u.real_name as hr_name
+      FROM candidates c
+      LEFT JOIN departments d ON c.dept_id = d.id
+      LEFT JOIN sources s ON c.source_id = s.id
+      LEFT JOIN job_categories jc ON c.category_id = jc.id
+      LEFT JOIN jobs j ON c.job_id = j.id
+      LEFT JOIN users u ON c.hr_id = u.id
+      WHERE 1=1
+    `;
+    // 動態篩選
+    if (keyword && keyword.trim() !== '') {
+      sql += ' AND (c.name LIKE ? OR c.email LIKE ? OR c.phone LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+    }
+    if (dept_id && dept_id !== '') {
+      sql += ' AND c.dept_id = ?';
+      params.push(dept_id);
+    }
+    if (source_id && source_id !== '') {
+      sql += ' AND c.source_id = ?';
+      params.push(source_id);
+    }
+    if (category_id && category_id !== '') {
+      sql += ' AND c.category_id = ?';
+      params.push(category_id);
+    }
+    if (status && status !== '') {
+      sql += ' AND c.status = ?';
+      params.push(status);
+    }
+    if (hr_id && hr_id !== '') {
+      sql += ' AND c.hr_id = ?';
+      params.push(hr_id);
+    }
+    // 獲取總數 (使用子查詢包裹主查詢)
+    const [countResult] = await db.execute(
+      `SELECT COUNT(*) as total FROM (${sql}) as temp`,
+      params
     );
+    // 排序和分頁
+    let finalSql = sql + ' ORDER BY c.createAt DESC LIMIT ? OFFSET ?';
+    let finalParams = [...params, String(pageSize), String(offset)];
+    // 執行查詢
+    const [rows] = await db.execute(finalSql, finalParams);
+    return {
+      list: rows,
+      total: countResult[0].total
+    };
+  },
+  // 查詢單筆應徵者資料：基本資訊和面試歷史
+  getFullInfo: async (id) => {
+    // 1.獲取應徵者基本資料
+    const [rows] = await db.execute(
+      `
+      SELECT c.*, d.name as dept_name, s.name as source_name, j.job_name as position_name
+      FROM candidates c
+      LEFT JOIN departments d ON c.dept_id = d.id
+      LEFT JOIN sources s ON c.source_id = s.id
+      LEFT JOIN jobs j ON c.job_id = j.id
+      WHERE c.id = ?`,
+      [id]
+    );
+    if (rows.length === 0) return null;
+    const [interviews] = await db.execute(
+      `
+      SELECT i.*, u.real_name as interviewer_name
+      FROM interviews i 
+      LEFT JOIN users u ON i.interviewer_id = u.id
+      WHERE i.candidate_id = ?
+      ORDER BY i.interview_round DESC
+      `,
+      [id]
+    );
+    return { ...rows[0], interviews };
+  },
+  // 新增應徵者
+  create: async (data) => {
+    const {
+      id,
+      name,
+      email,
+      phone,
+      category_id,
+      job_id,
+      dept_id,
+      source_id,
+      hr_id,
+      resume_url
+    } = data;
+    // 1.檢查是否重複投遞（郵箱）
+    const [existing] = await db.execute(
+      'SELECT id FROM candidates WHERE email = ? LIMIT 1',
+      [email]
+    );
+    const sql = `
+      INSERT INTO candidates 
+      (id, name, email, phone, category_id, job_id, dept_id, source_id, hr_id, resume_url, status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'screening')
+    `;
+    await db.execute(sql, [
+      id,
+      name,
+      email,
+      phone,
+      category_id,
+      job_id,
+      dept_id,
+      source_id,
+      hr_id,
+      resume_url
+    ]);
+    // 2.重複投遞標記
+    return { id, isRepeated: existing.length > 0 };
   }
-  // 4.陣列轉成物件方便搜尋
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u.real_name]));
-  // 5.組裝回到面試記錄
-  interviews.forEach((i) => {
-    i.interviewer_name = userMap[i.interviewer_id] || "未知面試官";
-  });
-  // 6.組裝資料
-  const result = {
-    ...basicInfo[0],
-    interviews: interviews,
-  };
-  return result;
 };
 
-// 新增應徵者
-export const createCandidate = async (candidateData) => {
-  const { id, name, email, phone, position, resume_url, source, hr_id, dept } =
-    candidateData;
-  // 1.檢查是否重複投遞（郵箱）
-  const [existing] = await db.execute(
-    "SELECT id FROM candidates WHERE email = ? LIMIT 1",
-    [email],
-  );
-  // 2.重複投遞標記
-  const isRepeated = existing.length > 0;
-  const sql =
-    "INSERT INTO candidates (id, name, email, phone, position, resume_url, source, hr_id, status, dept) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'screening')";
-    await db.execute(sql, [id, name, email, phone, position, 
-    resume_url, source, hr_id, dept]);
-    return {id, isRepeated};
-};
-
+export default CandidateModel;

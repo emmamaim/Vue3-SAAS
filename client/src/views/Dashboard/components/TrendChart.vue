@@ -1,28 +1,28 @@
 <script setup>
-import { computed } from 'vue'
-import VChart from 'vue-echarts'
+import { computed } from 'vue';
+import VChart from 'vue-echarts';
 
 // 按需導入echart模塊
-import { use } from 'echarts'
+import { use } from 'echarts';
 // ECharts 的底層渲染引擎
-import { CanvasRenderer } from 'echarts/renderers'
+import { CanvasRenderer } from 'echarts/renderers';
 // 折線圖
-import { LineChart } from 'echarts/charts'
+import { LineChart } from 'echarts/charts';
 // 座標系 / 滑鼠懸停提示 / 圖例
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 // 註冊組件
-use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent]);
 
 // 外部傳入的資料(dashboard的createdTrend)
 const props = defineProps({
   data: { type: Array, default: () => [] },
   title: { type: String, default: '' },
-})
+});
 
 const option = computed(() => {
   // 數據預處理：拆解成兩個獨立的陣列
-  const x = props.data.map((d) => d.date)
-  const y = props.data.map((d) => d.count)
+  const x = props.data.map((d) => d.date);
+  const y = props.data.map((d) => d.count);
   return {
     // 提示框配置
     // 當滑鼠碰到 座標軸 時顯示提示框
@@ -57,20 +57,27 @@ const option = computed(() => {
         symbolSize: 6,
       },
     ],
-  }
-})
+  };
+});
 
 // 空白處理
 const isEmpty = computed(() => {
-  return !props.data || props.data.length === 0
-})
+  return !props.data || props.data.length === 0;
+});
 </script>
 
 <template>
   <div
-    style="min-height: 250px; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center"
+    style="
+      min-height: 250px;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    "
   >
     <el-empty v-if="isEmpty" description="無任務" />
-    <v-chart v-else :option="option" autoresize/>
+    <v-chart v-else :option="option" autoresize />
   </div>
 </template>

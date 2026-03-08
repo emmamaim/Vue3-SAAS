@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 // 用戶登入
 export const userLoginService = (data) => {
@@ -6,8 +6,16 @@ export const userLoginService = (data) => {
     url: '/users/login',
     method: 'post',
     data,
-  })
-}
+  });
+};
+
+// 獲取HR列表
+export const getHrListService = () => {
+  return request({
+    url: '/users/hr-list',
+    method: 'get',
+  });
+};
 
 // 管理員
 // 獲取用戶列表
@@ -16,8 +24,8 @@ export const userListService = (params) => {
     url: '/users',
     method: 'get',
     params,
-  })
-}
+  });
+};
 
 // 注冊用戶
 export const userCreateService = (data) => {
@@ -25,8 +33,8 @@ export const userCreateService = (data) => {
     url: '/users',
     method: 'post',
     data,
-  })
-}
+  });
+};
 
 // 更新用戶信息
 export const userUpdateService = (id, data) => {
@@ -34,8 +42,8 @@ export const userUpdateService = (id, data) => {
     url: `/users/${id}`,
     method: 'put',
     data,
-  })
-}
+  });
+};
 
 // 停用/啓用用戶
 export const userUpdateStatusService = (id, status) => {
@@ -43,5 +51,5 @@ export const userUpdateStatusService = (id, status) => {
     url: `/users/${id}/status`,
     method: 'patch',
     data: { status },
-  })
-}
+  });
+};
