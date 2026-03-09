@@ -22,9 +22,22 @@ export const createCandidateService = (formData) => {
     url: '/candidates',
     method: 'post',
     data: formData,
-    // Axios 會自動處理 headers
-    // headers: {
-    //   'Content-Type': 'multipart/form-data',
-    // },
+  });
+};
+
+// 更新應徵者
+export const updateCandidateService = (id, formData) => {
+  return request({
+    url: `/candidates/${id}`,
+    method: 'put',
+    data: formData,
+  });
+};
+
+// 封存應徵者
+export const archiveCandidateService = (id) => {
+  return request({
+    url: `/candidates/${id}`,
+    method: 'delete',
   });
 };

@@ -1,17 +1,17 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { Search, Plus, RefreshLeft } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { userListService, userUpdateStatusService } from '@/api/users';
-import { systemInitService } from '@/api/system';
+import { useSystemStore } from '@/stores';
 import UserDialog from './components/UserDialog.vue';
 
+const systemStore = useSystemStore();
+const deptOptions = computed(() => systemStore.departments);
 // 響應式數據定義
 const loading = ref(false);
 const userList = ref([]);
 const total = ref(0);
-const deptOptions = ref([]);
-
 const dialogVisible = ref(false);
 const currentRow = ref({});
 // 搜尋和分頁參數
@@ -22,15 +22,6 @@ const queryParams = reactive({
   role: '',
   status: '',
 });
-// 獲取動態部門列表
-const getDeptOptions = async () => {
-  try {
-    const res = await systemInitService();
-    deptOptions.value = res.departments.map((d) => ({ label: d.name, value: d.id }));
-  } catch (error) {
-    console.error('獲取部門失敗', error);
-  }
-};
 
 // 獲取用戶列表
 const getUserList = async () => {
@@ -104,8 +95,8 @@ const formatRole = (role) => {
 };
 
 // 初始化挂載
-onMounted(() => {
-  getDeptOptions();
+onMounted(async () => {
+  await systemStore.fetchAllOptions();
   getUserList();
 });
 </script>
@@ -116,27 +107,12 @@ onMounted(() => {
     <el-card class="filter-card">
       <el-form :inline="true" :model="queryParams" class="filter-form">
         <el-form-item label="部門">
-          <el-select
-            v-model="queryParams.dept_id"
-            placeholder="請輸入部門名稱"
-            clearable
-            style="width: 150px"
-          >
-            <el-option
-              v-for="item in deptOptions"
-              :key="item.item"
-              :label="item.label"
-              :value="item.value"
-            />
+          <el-select v-model="queryParams.dept_id" placeholder="請輸入部門名稱" clearable style="width: 150px">
+            <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="角色">
-          <el-select
-            v-model="queryParams.role"
-            placeholder="全部角色"
-            clearable
-            style="width: 150px"
-          >
+          <el-select v-model="queryParams.role" placeholder="全部角色" clearable style="width: 150px">
             <el-option label="管理員" value="super_admin" />
             <el-option label="部門HR" value="dept_hr" />
             <el-option label="面試官" value="interviewer" />
@@ -150,7 +126,9 @@ onMounted(() => {
             查詢
           </el-button>
           <el-button @click="handleReset">
-            <el-icon> <RefreshLeft /> </el-icon>重置
+            <el-icon>
+              <RefreshLeft />
+            </el-icon>重置
           </el-button>
           <el-button type="success" @click="handleAdd">
             <el-icon>
@@ -190,11 +168,7 @@ onMounted(() => {
 
             <el-divider direction="vertical" />
 
-            <el-button
-              link
-              :type="row.status === 'active' ? 'danger' : 'success'"
-              @click="handleToggleStatus(row)"
-            >
+            <el-button link :type="row.status === 'active' ? 'danger' : 'success'" @click="handleToggleStatus(row)">
               {{ row.status === 'active' ? '停用' : '啟用' }}
             </el-button>
           </template>
@@ -202,15 +176,9 @@ onMounted(() => {
       </el-table>
 
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="getUserList"
-          @current-change="getUserList"
-        />
+        <el-pagination v-model:current-page="queryParams.page" v-model:page-size="queryParams.pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" @size-change="getUserList"
+          @current-change="getUserList" />
       </div>
     </el-card>
 

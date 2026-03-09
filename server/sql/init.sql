@@ -75,12 +75,14 @@ CREATE TABLE IF NOT EXISTS candidates (
     category_id INT DEFAULT NULL,
     status ENUM('pending', 'screening', 'interviewing', 'offer', 'hired', 'rejected') DEFAULT 'pending',
     hr_id VARCHAR(50) DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
     createAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_candidate_dept FOREIGN KEY (dept_id) REFERENCES departments(id) ON DELETE RESTRICT,
     CONSTRAINT fk_candidate_source FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE SET NULL,
     CONSTRAINT fk_candidate_category FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL,
     CONSTRAINT fk_candidate_hr FOREIGN KEY (hr_id) REFERENCES users(id) ON DELETE SET NULL,
-    CONSTRAINT fk_candidate_job FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE RESTRICT
+    CONSTRAINT fk_candidate_job FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE RESTRICT,
+    INDEX idx_candidate_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 建立面試表
@@ -187,14 +189,24 @@ INSERT INTO users (id, username, password, real_name, role, dept_id, created_by,
 ('u_010', 'tech_zhao', '$2b$10$r3fwB3SWaPWoBqzu55XLROJ9UdJiRTm/yXS7w6lB1q8uLnViVVJ1C', '趙雲', 'interviewer', 1, 'u_000', 'active');
 
 -- 應徵者初始資料
-INSERT INTO candidates (id, name, job_id, email, phone, resume_url, dept_id, source_id, category_id, status, hr_id) VALUES
-('can_uuid_001', '陳志明', 1, 'cm.chen@example.com', '0912-345-678', '/uploads/resumes/resume_01.pdf', 1, 1, 1, 'screening', 'u_001'),
-('can_uuid_002', '林美玲', 2, 'meiling.lin@example.com', '0922-111-222', '/uploads/resumes/resume_02.pdf', 1, 2, 1, 'interviewing', 'u_001'),
-('can_uuid_003', '張大為', 3, 'david.chang@example.com', '0933-444-555', NULL, 2, 3, 2, 'pending', 'u_001'),
-('can_uuid_004', '李小惠', 4, 'kevin.lee@example.com', '0955-666-777', '/uploads/resumes/resume_04.pdf', 2, 1, 2, 'rejected', 'u_002'),
-('can_uuid_005', '王國華', 5, 'kh.wang@example.com', '0966-888-999', '/uploads/resumes/resume_05.pdf', 3, 4, 3, 'offer', 'u_002'),
-('can_uuid_006', '趙敏', 1, 'min.chao@example.com', '0977-000-111', NULL, 1, 2, 1, 'hired', 'u_001'),
-('can_uuid_007', '孫悟空', 6, 'monkey.king@example.com', '0988-222-333', '/uploads/resumes/resume_07.pdf', 4, 1, 4, 'screening', 'u_002'),
-('can_uuid_008', '周小智', 2, 'jay.chou@example.com', '0911-333-444', '/uploads/resumes/resume_08.pdf', 1, 3, 1, 'interviewing', 'u_001'),
-('can_uuid_009', '蔡美林', 7, 'jolin.tsai@example.com', '0919-555-666', '/uploads/resumes/resume_09.pdf', 5, 2, 5, 'pending', 'u_002'),
-('can_uuid_010', '郭小明', 8, 'terry.guo@example.com', '0920-777-888', '/uploads/resumes/resume_10.pdf', 6, 4, 6, 'screening', 'u_001');
+INSERT INTO candidates (
+    id, name, job_id, email, phone, resume_url, 
+    dept_id, source_id, category_id, status, hr_id, is_active
+) VALUES 
+('c_001', '林書豪', 1, 'jeremy.lin@example.com', '0912-345-678', '/uploads/resumes/lin.pdf', 1, 1, 1, 'screening', 'u_002', 1),
+('c_002', '周杰倫', 5, 'jay.chou@example.com', '0922-111-222', '/uploads/resumes/chou.pdf', 3, 4, 3, 'interviewing', 'u_001', 1),
+('c_003', '蔡依林', 3, 'jolin.tsai@example.com', '0933-555-888', '/uploads/resumes/tsai.pdf', 2, 2, 2, 'pending', 'u_003', 1),
+('c_004', '張惠妹', 11, 'a-mei@example.com', '0988-777-666', '/uploads/resumes/amei.pdf', 6, 8, 6, 'offer', 'u_004', 1),
+('c_005', '陳奕迅', 2, 'eason.chan@example.com', '0900-123-456', NULL, 1, 7, 1, 'rejected', 'u_002', 1),
+('c_006', '桂綸鎂', 5, 'gwei@example.com', '0955-444-333', '/uploads/resumes/gwei.pdf', 3, 3, 3, 'hired', 'u_005', 1),
+('c_007', '彭于晏', 1, 'eddie.peng@example.com', '0966-888-999', '/uploads/resumes/peng.pdf', 1, 9, 1, 'screening', 'u_002', 1),
+('c_008', '舒淇', 17, 'shuki@example.com', '0977-000-111', '/uploads/resumes/shuki.pdf', 4, 1, 9, 'pending', 'u_004', 1),
+('c_009', '金城武', 7, 'takeshi@example.com', '0944-222-333', '/uploads/resumes/takeshi.pdf', 1, 4, 4, 'interviewing', 'u_002', 1),
+('c_010', '五月天阿信', 6, 'ashin@example.com', '0911-999-000', NULL, 3, 10, 3, 'screening', 'u_001', 1);
+
+-- 模擬已封存（is_active = 0）
+INSERT INTO candidates (
+    id, name, job_id, email, phone, resume_url, 
+    dept_id, source_id, category_id, status, hr_id, is_active
+) VALUES 
+('c_011', '舊應徵者', 2, 'old.user@example.com', '0900-000-000', NULL, 1, 5, 1, 'rejected', 'u_002', 0);

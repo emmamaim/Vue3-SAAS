@@ -7,11 +7,3 @@ export const systemInitService = () => {
     method: 'get',
   });
 };
-
-// 根據職位類別獲取具體職位
-export const getJobsByCategoryService = (categoryId) => {
-  return request({
-    url: `/system/jobs/${categoryId}`,
-    method: 'get',
-  });
-};

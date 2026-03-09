@@ -1,7 +1,7 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 import { userCreateService, userUpdateService } from '@/api/users';
-import { systemInitService } from '@/api/system';
+import { useSystemStore } from '@/stores';
 import { ElMessage } from 'element-plus';
 
 // 父組件傳進的資料
@@ -12,11 +12,8 @@ const props = defineProps({
 // emit通知父組件關閉對話框和刷新列表
 const emit = defineEmits(['update:visible', 'success']);
 // 獲取部門列表
-const deptOptions = ref([]);
-const getDeptOptions = async () => {
-  const res = await systemInitService();
-  deptOptions.value = res.departments;
-};
+const systemStore = useSystemStore();
+const deptOptions = computed(() => systemStore.departments);
 // 定義表單
 const formRef = ref(null);
 const isEdit = ref(false);
@@ -55,7 +52,7 @@ watch(
   () => props.visible,
   async (newVal) => {
     if (newVal) {
-      await getDeptOptions();
+      await systemStore.fetchAllOptions();
       // 清除表單校驗殘留
       nextTick(() => {
         if (formRef.value) formRef.value.clearValidate();
@@ -69,7 +66,7 @@ watch(
           username: props.rowData.username,
           real_name: props.rowData.real_name,
           role: props.rowData.role,
-          dept_id: props.rowData.dept_id,
+          dept_id: props.rowData.dept_id ? Number(props.rowData.dept_id) : '',
           password: '',
         };
       } else {
@@ -119,30 +116,14 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="isEdit ? '編輯用戶' : '新增用戶'"
-    width="500px"
-    @close="handleClose"
-  >
+  <el-dialog :model-value="visible" :title="isEdit ? '編輯用戶' : '新增用戶'" width="500px" @close="handleClose">
     <el-form :model="form" ref="formRef" :rules="rules" label-width="100px">
       <el-form-item label="帳號" prop="username" for="username">
-        <el-input
-          v-model="form.username"
-          :disabled="isEdit"
-          id="username"
-          placeholder="建議使用英文名"
-        />
+        <el-input v-model="form.username" :disabled="isEdit" id="username" placeholder="建議使用英文名" />
       </el-form-item>
 
       <el-form-item :label="isEdit ? '重設密碼' : '初始密碼'" prop="password" for="password">
-        <el-input
-          v-model="form.password"
-          type="password"
-          id="password"
-          show-password
-          placeholder="不修改請留空"
-        />
+        <el-input v-model="form.password" type="password" id="password" show-password placeholder="不修改請留空" />
       </el-form-item>
 
       <el-form-item label="真實姓名" prop="real_name" for="real_name">
@@ -151,12 +132,7 @@ const submitForm = async () => {
 
       <el-form-item label="所屬部門" prop="dept_id" for="dept_id">
         <el-select v-model="form.dept_id" id="dept_id" placeholder="請選擇部門" style="width: 100%">
-          <el-option
-            v-for="item in deptOptions"
-            :key="item.id"
-            :label="item.name"
-            :value="item.id"
-          />
+          <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
       </el-form-item>
 
