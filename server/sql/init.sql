@@ -61,7 +61,6 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE departments 
 ADD CONSTRAINT fk_dept_manager FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL;
 
-
 -- 建立應徵者表
 CREATE TABLE IF NOT EXISTS candidates (
     id VARCHAR(50) PRIMARY KEY,
@@ -91,19 +90,59 @@ CREATE TABLE IF NOT EXISTS interviews (
     candidate_id VARCHAR(50) NOT NULL,
     interviewer_id VARCHAR(50) NOT NULL,
     hr_id VARCHAR(50) NOT NULL,
+    dept_id INT NOT NULL,
     interview_round TINYINT DEFAULT 1,
+    booking_id VARCHAR(50) NULL,
+    task_id VARCHAR(50) NULL,
     date DATE NOT NULL,
     startTime TIME NOT NULL,
     endTime TIME NOT NULL,
     location VARCHAR(255) DEFAULT 'Remote / Online',
-    rating TINYINT,
+    result ENUM('pass', 'fail', 'pending') DEFAULT 'pending', 
     comments TEXT,
     status ENUM('scheduled', 'completed', 'cancelled') DEFAULT 'scheduled',
-    updatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_int_candidate FOREIGN KEY (candidate_id) REFERENCES candidates (id) ON DELETE CASCADE,
-    CONSTRAINT fk_int_interviewer FOREIGN KEY (interviewer_id) REFERENCES users (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_int_hr FOREIGN KEY (hr_id) REFERENCES users (id) ON DELETE RESTRICT
+    updatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 面試官任務表
+CREATE TABLE IF NOT EXISTS tasks (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    status ENUM('todo', 'done') NOT NULL DEFAULT 'todo',
+    priority ENUM('high', 'medium', 'low') NOT NULL DEFAULT 'medium',
+    description TEXT,
+    dueDate DATETIME,
+    createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 用戶行程表
+CREATE TABLE IF NOT EXISTS bookings (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    startTime CHAR(5) NOT NULL,
+    endTime CHAR(5) NOT NULL,
+    status ENUM('pending', 'confirmed', 'canceled') NOT NULL DEFAULT 'confirmed',
+    relatedTaskId VARCHAR(50) NULL,
+    createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 補上外鍵
+ALTER TABLE interviews 
+ADD CONSTRAINT fk_int_candidate FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE,
+ADD CONSTRAINT fk_int_interviewer FOREIGN KEY (interviewer_id) REFERENCES users(id) ON DELETE RESTRICT;
+
+
+
+
 
 -- 部門初始資料
 INSERT INTO departments (id, name, description) VALUES 

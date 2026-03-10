@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 import * as candidateController from "../controllers/candidateController.js";
 // JWT 驗證中介軟體（確保只有登入者能查）
-import { auth, isAdmin } from "../middleware/authMiddleware.js";
+import { auth, isStaff } from "../middleware/authMiddleware.js";
 import multer from "multer";
 import path from "path";
 
@@ -25,20 +25,22 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-router.get("/", auth, candidateController.getCandidates);
-router.get("/:id", auth, candidateController.getCandidateInfo);
+router.get("/", auth, isStaff, candidateController.getCandidates);
+router.get("/:id", auth, isStaff, candidateController.getCandidateInfo);
 router.post(
   "/",
   auth,
+  isStaff,
   upload.single("resume"),
   candidateController.addCandidate,
 );
 router.put(
   "/:id",
   auth,
+  isStaff,
   upload.single("resume"),
   candidateController.updateCandidate,
 );
-router.delete("/:id", auth, candidateController.archiveCandidate);
+router.delete("/:id", auth, isStaff, candidateController.archiveCandidate);
 
 export default router;

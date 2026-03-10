@@ -27,9 +27,9 @@ const router = createRouter({
         {
           path: 'users',
           component: () => import('@/views/Users/UserManagement.vue'),
-          meta: { requiresAuth: true, role: 'super_admin' },
+          meta: { requiresAuth: true, roles: ['super_admin'] },
         },
-        // 允許管理員與部門HR進入
+        // 允許管理員與HR進入
         {
           path: 'candidates',
           component: () => import('@/views/Candidates/CandidateManagement.vue'),
@@ -38,8 +38,16 @@ const router = createRouter({
             roles: ['super_admin', 'dept_hr'],
           },
         },
-        { path: 'tasks', component: TasksPage },
-        { path: 'schedule', component: SchedulePage },
+        {
+          path: 'tasks',
+          component: TasksPage,
+          meta: { requiresAuth: true, roles: ['interviewer'] },
+        },
+        {
+          path: 'schedule',
+          component: SchedulePage,
+          meta: { requiresAuth: true, roles: ['interviewer', 'dept_hr', 'super_admin'] },
+        },
       ],
     },
   ],
@@ -50,21 +58,19 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
   const hasToken = !!userStore.token;
   const role = userStore.userInfo?.role;
+  const requiredRoles = to.meta.roles;
   // 1.token不存在
   if (to.meta.requiresAuth && !hasToken) {
-    next('/login');
+    return next('/login');
   }
-  // 2.token存在的情況下進入登入頁
+  // 2.token存在的情況下禁止回登入頁
   else if (to.path === '/login' && hasToken) {
-    next('/');
+    return next('/');
   }
   // 3.登入權限不足
-  else if (to.meta.roles && !to.meta.roles.includes(role)) {
-    ElMessage.warning('權限不足');
-    next('/');
-  } else if (to.meta.role && to.meta.role !== role) {
-    ElMessage.warning('權限不足，僅限管理員');
-    next('/');
+  else if (requiredRoles && !requiredRoles.includes(role)) {
+    ElMessage.warning('權限不足，已導回首頁');
+    return next('/dashboard');
   } else {
     next();
   }
