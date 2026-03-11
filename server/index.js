@@ -18,6 +18,7 @@ import systemRoutes from "./routes/systemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import deptRoutes from "./routes/deptRoutes.js";
 import candidateRoutes from "./routes/candidateRoutes.js";
+import interviewRoutes from "./routes/interviewRoutes.js";
 
 import taskRoutes from "./routes/taskRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
@@ -40,10 +41,11 @@ app.use("/api/bookings", auth, bookingRoutes);
 
 // 2. 系統管理層 (僅限超級管理員)
 app.use("/api/departments", auth, isAdmin, deptRoutes);
-app.use("/api/users", auth, isAdmin, userRoutes);
+app.use("/api/users", userRoutes);
 
-// 3. 業務操作層 (管理員與 HR)
+// 3. 業務操作層 (管理員與 HR)•
 app.use("/api/candidates", auth, isStaff, candidateRoutes);
+app.use("/api/interviews", auth, isStaff, interviewRoutes);
 
 // 4. 個人執行層 (面試官)
 app.use("/api/tasks", auth, isInterviewer, taskRoutes);

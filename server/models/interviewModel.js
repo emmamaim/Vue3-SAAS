@@ -1,5 +1,14 @@
 import db from "../config/db.js";
 
+// 時間工具：預設tasks的截止時間為面試的隔天18：00
+const getNextDaySixPM = (dateStr) => {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  // 取得 YYYY-MM-DD
+  const nextDay = date.toISOString().split("T")[0];
+  return `${nextDay} 18:00:00`;
+};
+
 const InterviewModel = {
   // 檢查衝突
   checkConflict: async (
@@ -10,7 +19,7 @@ const InterviewModel = {
     excludeBookingId = null,
   ) => {
     let sql =
-      "SELECT * from bookings WHERE user_id = ? AND date = ? AND status != 'canceled' AND (? < endTime AND ? > startTime)";
+      "SELECT * FROM bookings WHERE user_id = ? AND date = ? AND status != 'canceled' AND (? < endTime AND ? > startTime)";
     const params = [interviewerId, date, startTime, endTime];
     if (excludeBookingId) {
       sql += ` AND id != ?`;
@@ -19,7 +28,6 @@ const InterviewModel = {
     const [rows] = await db.execute(sql, params);
     return rows.length > 0;
   },
-
   // 三表聯動：傳入connection物件，控制transaction
   // 建立面試
   createWithTransaction: async (conn, data) => {
@@ -38,6 +46,8 @@ const InterviewModel = {
       title,
       location,
     } = data;
+    // 計算截止時間：隔天 18:00
+    const dueDate = getNextDaySixPM(date);
     // 1.建立tasks
     const taskSql =
       "INSERT INTO tasks (id, user_id, title, status, priority, description, dueDate) VALUES (?, ?, ?, 'todo', 'high', ?, ?)";
@@ -46,7 +56,7 @@ const InterviewModel = {
       interviewer_id,
       `面試評價: ${title}`,
       `請針對應徵者進行第 ${interview_round} 輪面試評價`,
-      `${date} ${endTime}:00`,
+      dueDate,
     ]);
     // 2.建立 bookings
     const bookingSql =
@@ -74,8 +84,8 @@ const InterviewModel = {
       startTime,
       endTime,
       location,
-      booking_id,
-      task_id,
+      bookingId,
+      taskId,
     ]);
     // 4.更新應徵者狀態
     await conn.execute(
@@ -128,10 +138,9 @@ const InterviewModel = {
     if (patch.interviewer_id || patch.date || patch.endTime || patch.title) {
       const updateTaskSql =
         "UPDATE tasks SET user_id = COALESCE(?, user_id), title = COALESCE(?, title), dueDate = COALESCE(?, dueDate) WHERE id = ?";
-      // 組合新的截止時間：YYYY-MM-DD HH:mm:00
+      // 計算新的截止時間
       const finalDate = patch.date || oldDate;
-      const finalEnd = patch.endTime || oldEnd;
-      const newDueDate = `${finalDate} ${finalEnd}:00`;
+      const newDueDate = getNextDaySixPM(finalDate);
       await conn.execute(updateTaskSql, [
         patch.interviewer_id || null,
         patch.title ? `面試評價: ${patch.title}` : null,

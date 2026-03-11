@@ -17,6 +17,11 @@ export const useSystemStore = defineStore('system', {
     // 初始化獲取所有選項
     async fetchAllOptions() {
       if (this.isLoaded && this.jobs.length > 0) return;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('[System Store] 尚未登入，跳過資料預載');
+        return;
+      }
       try {
         const [systemRes, hrRes] = await Promise.all([systemInitService(), getHrListService()]);
         this.departments = systemRes.departments || [];

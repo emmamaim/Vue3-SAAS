@@ -76,22 +76,43 @@ const CandidateModel = {
     // 1.獲取應徵者基本資料
     const [rows] = await db.execute(
       `
-      SELECT c.*, d.name as dept_name, s.name as source_name, j.job_name as position_name
+      SELECT 
+      c.*, 
+      d.name as dept_name, 
+      s.name as source_name, 
+      j.job_name as position_name,
+      u_hr.real_name as responsible_hr_name
       FROM candidates c
       LEFT JOIN departments d ON c.dept_id = d.id
       LEFT JOIN sources s ON c.source_id = s.id
       LEFT JOIN jobs j ON c.job_id = j.id
+      LEFT JOIN users u_hr ON c.hr_id = u_hr.id
       WHERE c.id = ? AND c.is_active = 1`,
       [id],
     );
     if (rows.length === 0) return null;
     const [interviews] = await db.execute(
       `
-      SELECT i.*, u.real_name as interviewer_name
+      SELECT 
+      i.id,
+      i.interview_round,
+      DATE_FORMAT(i.date, '%Y-%m-%d') as date, -- 格式化日期
+      DATE_FORMAT(i.startTime, '%H:%i') as startTime, -- 格式化時間成 14:00
+      DATE_FORMAT(i.endTime, '%H:%i') as endTime,
+      i.location,
+      i.status,
+      i.result,
+      i.comments,
+      i.booking_id,
+      i.task_id,
+      u_int.real_name as interviewer_name,
+      u_hr.real_name as creator_hr_name,
+      i.updatedAt
       FROM interviews i 
-      LEFT JOIN users u ON i.interviewer_id = u.id
+      LEFT JOIN users u_int ON i.interviewer_id = u_int.id
+      LEFT JOIN users u_hr ON i.hr_id = u_hr.id
       WHERE i.candidate_id = ?
-      ORDER BY i.interview_round DESC
+      ORDER BY i.interview_round ASC
       `,
       [id],
     );
