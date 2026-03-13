@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 用戶行程表
 CREATE TABLE IF NOT EXISTS bookings (
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     date DATE NOT NULL,
     startTime CHAR(5) NOT NULL,
     endTime CHAR(5) NOT NULL,
-    status ENUM('pending', 'confirmed', 'canceled') NOT NULL DEFAULT 'confirmed',
+    status ENUM('pending', 'confirmed', 'completed', 'canceled') NOT NULL DEFAULT 'confirmed',
     relatedTaskId VARCHAR(50) NULL,
     createAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updateAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -139,9 +139,6 @@ CREATE TABLE IF NOT EXISTS bookings (
 ALTER TABLE interviews 
 ADD CONSTRAINT fk_int_candidate FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE,
 ADD CONSTRAINT fk_int_interviewer FOREIGN KEY (interviewer_id) REFERENCES users(id) ON DELETE RESTRICT;
-
-
-
 
 
 -- 部門初始資料

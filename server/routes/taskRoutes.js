@@ -1,11 +1,12 @@
 import express from "express";
 const router = express.Router();
 import * as taskController from "../controllers/taskController.js";
+import { auth } from "../middleware/authMiddleware.js";
 
-// 定義路徑與對應的controller函式
-router.get("/", taskController.getAllTasks);
-router.post("/", taskController.createTasks);
-router.patch("/:id", taskController.updateTask);
-router.delete("/:id", taskController.removeTask);
+router.use(auth);
+
+router.get("/", taskController.getTasks);
+router.patch("/:id/completed", taskController.completeInterview);
+router.patch("/:id/status", taskController.updateTaskStatus);
 
 export default router;

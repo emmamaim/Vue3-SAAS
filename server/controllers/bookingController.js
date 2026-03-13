@@ -22,6 +22,7 @@ export const getBookings = async (req, res) => {
     });
     res.json({ success: true, data });
   } catch (err) {
+    console.error("Critical Error:", err);
     res.status(500).json({ success: false, message: "獲取行程失敗" });
   }
 };

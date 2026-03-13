@@ -23,7 +23,7 @@ const BookingModel = {
     return rows;
   },
   // 查詢單筆行程
-  getById: async (id) => {
+  findById: async (id) => {
     const [rows] = await db.execute("SELECT * FROM bookings WHERE id = ?", [
       id,
     ]);
@@ -114,3 +114,5 @@ const BookingModel = {
     return rows.length > 0;
   },
 };
+
+export default BookingModel;

@@ -37,7 +37,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // 註冊路徑
 // 1. 公共/系統層
 app.use("/api/system", systemRoutes);
-app.use("/api/bookings", auth, bookingRoutes);
 
 // 2. 系統管理層 (僅限超級管理員)
 app.use("/api/departments", auth, isAdmin, deptRoutes);
@@ -49,6 +48,7 @@ app.use("/api/interviews", auth, isStaff, interviewRoutes);
 
 // 4. 個人執行層 (面試官)
 app.use("/api/tasks", auth, isInterviewer, taskRoutes);
+app.use("/api/bookings", auth, bookingRoutes);
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {

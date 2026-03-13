@@ -37,7 +37,7 @@ export const isStaff = (req, res, next) => {
   next();
 };
 
-// 個人執行者：面試官 (僅限查看自己的任務清單與行事曆)
+// 個人執行者：面試官 (僅限查看自己的任務清單)
 export const isInterviewer = (req, res, next) => {
   if (req.user.role !== "interviewer") {
     return res.status(403).json({ message: "此操作僅限面試官權限" });

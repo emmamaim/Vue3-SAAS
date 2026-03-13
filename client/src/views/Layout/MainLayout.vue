@@ -56,23 +56,24 @@ const handleLogout = () => {
           </el-icon>
           <template #title>儀表板</template>
         </el-menu-item>
-        <el-menu-item index="/candidates">
+        <el-menu-item v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role)" index="/candidates">
           <el-icon>
             <User />
           </el-icon>
           <template #title>應徵者管理</template>
         </el-menu-item>
-        <el-menu-item index="/tasks">
+        <el-menu-item v-if="userStore.userInfo?.role === 'interviewer'" index="/tasks">
           <el-icon>
             <List />
           </el-icon>
           <template #title>任務管理</template>
         </el-menu-item>
-        <el-menu-item index="/schedule">
+        <el-menu-item v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
+          index="/schedule">
           <el-icon>
             <Calendar />
           </el-icon>
-          <template #title>面試管理</template>
+          <template #title>面試行程</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
