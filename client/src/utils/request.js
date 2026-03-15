@@ -2,7 +2,7 @@ import axios from 'axios';
 import router from '@/router';
 import { ElMessage } from 'element-plus';
 
-const baseURL = 'http://localhost:3000/api';
+const baseURL = 'http://168.138.210.30:3000/api';
 
 // 建立 axios實例
 const service = axios.create({

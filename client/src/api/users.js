@@ -17,6 +17,14 @@ export const getHrListService = () => {
   });
 };
 
+// 獲取面試官列表
+export const getInterviewerListService = () => {
+  return request({
+    url: '/users/interviewer-list',
+    method: 'get',
+  });
+};
+
 // 管理員
 // 獲取用戶列表
 export const userListService = (params) => {

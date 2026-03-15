@@ -59,7 +59,7 @@ const UserModel = {
     const [rows] = await db.execute(sql, params);
     return { users: rows, total: countResult[0].total };
   },
-
+  // 新增用戶
   create: async (userData) => {
     const sql = `
       INSERT INTO users (id, username, password, real_name, role, dept_id, created_by) 
@@ -77,7 +77,7 @@ const UserModel = {
       created_by
     ]);
   },
-
+  // 更新用戶
   update: async (id, updateData) => {
     let fields = [];
     let params = [];
@@ -110,7 +110,7 @@ const UserModel = {
     const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
     return await db.execute(sql, params);
   },
-
+  // 獲取HR列表（供前端下拉選單使用）
   getHrList: async () => {
     const sql = `
     SELECT 
@@ -123,6 +123,13 @@ const UserModel = {
       AND real_name IS NOT NULL
     ORDER BY real_name ASC
     `;
+    const [rows] = await db.execute(sql);
+    return rows;
+  },
+  // 獲取面試官列表（供前端下拉選單使用）
+  getInterviewerList: async () => {
+    const sql =
+      "SELECT id as value, real_name as label, dept_id FROM users WHERE role = 'interviewer' AND status = 'active' AND id IS NOT NULL AND real_name IS NOT NULL ORDER BY real_name ASC ";
     const [rows] = await db.execute(sql);
     return rows;
   }

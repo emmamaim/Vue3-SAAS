@@ -1,6 +1,5 @@
-import mysql from "mysql2/promise";
-// 載入.env設定
-import "dotenv/config"
+import mysql from 'mysql2/promise';
+import 'dotenv/config';
 
 // rocess.env.XXX: Node.js 讀取 .env 檔案內容
 const pool = mysql.createPool({
@@ -14,7 +13,20 @@ const pool = mysql.createPool({
   timezone: '+08:00',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  queueLimit: 0
 });
+
+// === 新增：啟動即時測試連線 ===
+(async () => {
+  try {
+    const connection = await pool.getConnection();
+    console.log('[Database] 雲端資料庫連線成功！');
+    connection.release();
+  } catch (err) {
+    console.error('[Database] 資料庫連線失敗！');
+    console.error('錯誤詳細資訊：', err.message);
+    console.error('請檢查 .env 中的 DB_PASSWORD 是否正確。');
+  }
+})();
 
 export default pool;

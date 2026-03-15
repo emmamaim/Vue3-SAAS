@@ -197,7 +197,7 @@ async function onSubmit() {
     // 過濾掉轉換失敗的資料
     .filter((x) => x.s != null && x.e != null)
 
-  // 第三部：檢測時間衝突
+  // 第三步：檢測時間衝突
   const hit = blocks.some((b) => isOverlap(sMin, eMin, b.s, b.e))
   // 時間衝突：hit = true => 搜尋其他空檔
   // 時間不衝突：hit = false => 儲存提交

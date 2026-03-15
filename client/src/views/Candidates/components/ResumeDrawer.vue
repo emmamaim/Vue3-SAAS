@@ -1,0 +1,90 @@
+<script setup>
+import { computed } from 'vue';
+import { baseURL } from '@/utils/request';
+
+const props = defineProps({
+  modelValue: Boolean,
+  url: String,
+});
+
+const emit = defineEmits(['update:modelValue']);
+
+// 移除末尾的/api
+const fileBaseUrl = baseURL.replace('/api', '');
+
+// 拼接完整的檔案路徑
+const fullUrl = computed(() => {
+  if (!props.url) return '';
+  // http 開頭則不拼接，否則拼接伺服器位址
+  return props.url.startsWith('http') ? props.url : `${fileBaseUrl}${props.url}`;
+});
+
+// 判斷PDF
+const isPDF = computed(() => {
+  return props.url?.toLowerCase().endsWith('.pdf');
+});
+
+// 處理 Word 下載
+const downloadFile = () => {
+  if (!fullUrl.value) return;
+  const link = document.createElement('a');
+  link.href = fullUrl.value;
+  link.setAttribute('download', '');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const handleClose = () => {
+  emit('update:modelValue', false);
+};
+</script>
+
+<template>
+  <el-drawer
+    :model-value="modelValue"
+    @update:model-value="handleClose"
+    title="履歷預覽"
+    size="50%"
+    destroy-on-close
+  >
+    <div v-if="url" class="resume-container">
+      <iframe v-if="isPDF" :src="fullUrl" width="100%" height="100%" frameborder="0"></iframe>
+
+      <div v-else class="no-preview">
+        <el-result
+          icon="info"
+          title="該格式不支援線上預覽"
+          sub-title="Word 檔案需下載後使用 Office 軟體查看"
+        >
+          <template #extra>
+            <el-button type="primary" @click="downloadFile">立即下載檔案</el-button>
+          </template>
+        </el-result>
+      </div>
+    </div>
+    <el-empty v-else description="暫無履歷檔案" />
+  </el-drawer>
+</template>
+
+<style scoped>
+.resume-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.no-preview {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
+
+iframe {
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+}
+</style>

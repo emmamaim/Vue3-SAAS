@@ -4,11 +4,14 @@ import * as userController from '../controllers/userController.js';
 import { auth, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-// 登入（無需認證
+// 登入（無需認證）
 router.post('/login', userController.login);
 
-// 管理員專用路由（需要認證和管理員權限）
+// 需登入認證
 router.get('/hr-list', auth, userController.getHrList);
+router.get('/interviewer-list', auth, userController.getInterviewerList);
+
+// 管理員專用路由（需要認證和管理員權限）
 router.get('/', auth, isAdmin, userController.getUserList);
 router.post('/', auth, isAdmin, userController.createUser);
 router.put('/:id', auth, isAdmin, userController.updateUser);

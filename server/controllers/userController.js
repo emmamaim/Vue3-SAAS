@@ -39,7 +39,12 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: '伺服器錯誤' });
+    console.log('!!! 登入 Controller 發生錯誤 !!!');
+    console.error(error);
+    res.status(500).json({
+      message: '伺服器錯誤',
+      detail: error.message
+    });
   }
 };
 
@@ -53,6 +58,24 @@ export const getHrList = async (req, res) => {
     });
   } catch (error) {
     console.error('獲取 HR 列表出錯:', error);
+    res.status(500).json({
+      success: false,
+      message: '伺服器錯誤',
+      detail: error.message
+    });
+  }
+};
+
+// 獲取面試官列表
+export const getInterviewerList = async (req, res) => {
+  try {
+    const list = await UserModel.getInterviewerList();
+    res.json({
+      success: true,
+      data: list
+    });
+  } catch (error) {
+    console.error('獲取面試官列表出錯:', error);
     res.status(500).json({
       success: false,
       message: '伺服器錯誤',
