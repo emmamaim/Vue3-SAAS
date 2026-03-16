@@ -160,66 +160,26 @@ const handleArchive = async (row) => {
     <el-card class="filter-card">
       <el-form :inline="true" :model="queryParams">
         <el-form-item label="關鍵字">
-          <el-input
-            v-model="queryParams.keyword"
-            placeholder="姓名 / 職位"
-            clearable
-            @keyup.enter="handleQuery"
-          />
+          <el-input v-model="queryParams.keyword" placeholder="姓名 / 職位" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item label="部門">
-          <el-select
-            v-model="queryParams.dept_id"
-            placeholder="選擇部門"
-            clearable
-            style="width: 140px"
-          >
-            <el-option
-              v-for="item in deptOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
+          <el-select v-model="queryParams.dept_id" placeholder="選擇部門" clearable style="width: 140px">
+            <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="來源">
-          <el-select
-            v-model="queryParams.source_id"
-            placeholder="選擇來源"
-            clearable
-            style="width: 140px"
-          >
-            <el-option
-              v-for="item in sourceOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
+          <el-select v-model="queryParams.source_id" placeholder="選擇來源" clearable style="width: 140px">
+            <el-option v-for="item in sourceOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="狀態">
-          <el-select
-            v-model="queryParams.status"
-            placeholder="人才階段"
-            clearable
-            style="width: 140px"
-          >
-            <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+          <el-select v-model="queryParams.status" placeholder="人才階段" clearable style="width: 140px">
+            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="負責 HR">
           <el-select v-model="queryParams.hr_id" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="item in hrOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+            <el-option v-for="item in hrOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -246,20 +206,21 @@ const handleArchive = async (row) => {
     </el-card>
     <!-- 表格展示區域 -->
     <el-card class="table-card" style="margin-top: 20px">
-      <el-table v-loading="loading" :data="candidateList" border stripe>
-        <el-table-column prop="name" label="姓名" width="100" />
-        <el-table-column prop="position_name" label="應徵職位" width="150" />
-        <el-table-column prop="dept_name" label="部門" width="120" />
-        <el-table-column prop="source_name" label="來源" width="120" />
-        <el-table-column prop="hr_name" label="負責 HR" width="120" />
-        <el-table-column label="狀態" width="120" align="center">
+      <el-table v-loading="loading" :data="candidateList" border stripe align="center"
+        :cell-style="{ textAlign: 'center' }" :header-cell-style="{ textAlign: 'center' }">
+        <el-table-column prop="name" label="姓名" />
+        <el-table-column prop="position_name" label="應徵職位" />
+        <el-table-column prop="dept_name" label="部門" />
+        <el-table-column prop="source_name" label="來源" />
+        <el-table-column prop="hr_name" label="負責 HR" />
+        <el-table-column label="狀態" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" effect="light">
-              {{ statusOptions.find((opt) => opt.value === row.status)?.label || row.status }}
+              {{statusOptions.find((opt) => opt.value === row.status)?.label || row.status}}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="履歷" width="100" align="center">
+        <el-table-column label="履歷" width="100">
           <template #default="{ row }">
             <el-link v-if="row.resume_url" type="primary" @click="handleViewResume(row.resume_url)">
               <el-icon>
@@ -275,7 +236,7 @@ const handleArchive = async (row) => {
             {{ row.createAt ? row.createAt.slice(0, 10) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="180" align="center">
+        <el-table-column label="操作" fixed="right" width="180">
           <template #default="{ row }">
             <el-tooltip content="查看詳情" placement="top">
               <el-button link type="primary" :icon="View" @click="handleViewDetail(row.id)" />
@@ -294,14 +255,8 @@ const handleArchive = async (row) => {
       </el-table>
 
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @change="getCandidatesList"
-        />
+        <el-pagination v-model:current-page="queryParams.page" v-model:page-size="queryParams.pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" @change="getCandidatesList" />
       </div>
     </el-card>
   </div>
@@ -312,11 +267,7 @@ const handleArchive = async (row) => {
   <!-- 應徵者詳情彈窗 -->
   <CandidateInfoDialog v-model="infoVisible" :id="currentId" />
   <!-- 安排面試彈窗 -->
-  <InterviewDialog
-    v-model="interviewVisible"
-    :candidate="selectedCandidate"
-    @refresh="getCandidatesList"
-  />
+  <InterviewDialog v-model="interviewVisible" :candidate="selectedCandidate" @refresh="getCandidatesList" />
 </template>
 
 <style scoped>

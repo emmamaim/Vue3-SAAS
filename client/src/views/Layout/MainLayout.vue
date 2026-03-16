@@ -20,7 +20,7 @@ const title = computed(() => {
     '/users': '用戶管理',
     '/candidates': '應徵者管理',
     '/tasks': '任務管理',
-    '/schedule': '面試管理',
+    '/bookings': '面試管理',
   }
   // 考慮fallback -> 防止加新路由時候標題變空白
   return map[route.path] ?? 'WorkHub'
@@ -69,7 +69,7 @@ const handleLogout = () => {
           <template #title>任務管理</template>
         </el-menu-item>
         <el-menu-item v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
-          index="/schedule">
+          index="/bookings">
           <el-icon>
             <Calendar />
           </el-icon>

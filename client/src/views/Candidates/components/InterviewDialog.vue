@@ -2,12 +2,16 @@
 import { ref, reactive, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useBookingStore, useSystemStore } from '@/stores';
-import { createInterviewService } from '@/api/interview';
+import { createInterviewService, updateInterviewService } from '@/api/interview';
+import { getCandidateInfoService } from '@/api/candidate';
+import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time';
 
 const props = defineProps({
   modelValue: Boolean,
   candidate: Object,
+  interview: Object,
 });
+const isEdit = computed(() => !!props.interview?.id);
 const emit = defineEmits(['update:modelValue', 'refresh']);
 const bookingStore = useBookingStore();
 const systemStore = useSystemStore();
@@ -22,45 +26,6 @@ const loading = ref(false);
 // 附加功能1：當選擇開始時間 => 自動調整結束時間
 // 附加功能2：檢測時間衝突 => 自動導航可選的時間區間
 // 附加功能3：超出時間範圍 => 禁用儲存按鈕
-// 時間工具函式1：把"HH:mm"轉成分鐘數
-function toMinutes(hhmm) {
-  if (!hhmm) return null;
-  const [h, m] = hhmm.split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) {
-    return null;
-  }
-  return h * 60 + m;
-}
-// 時間工具函式2：把分鐘數轉回"HH:mm"
-function toHHmm(min) {
-  // 取得小時數 => 補0確保字串長度至少為 2
-  const h = String(Math.floor(min / 60)).padStart(2, '0');
-  // 取得分鐘數 => 補0確保字串長度至少為 2
-  const m = String(min % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
-// 時間工具函式3：檢測時間是否重疊
-function isOverlap(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && aEnd > bStart;
-}
-// 限制結束時間
-const END_MAX = toMinutes('20:30');
-// 時間選擇的間隔（30分鐘）
-const STEP_MIN = 30;
-// 時間槽搜尋：找出下一個還沒有被佔用的空檔
-function findNextAvailableSlot(startMin, durationMin, blocks) {
-  // startMin：時間搜尋的起點
-  // block：已經被預約的時間區間
-  let s = startMin;
-  while (s + durationMin <= END_MAX) {
-    // 計算目前嘗試的結束時間
-    const e = s + durationMin;
-    const hit = blocks.some((b) => isOverlap(s, e, b.s, b.e));
-    if (!hit) return { s, e };
-    s += STEP_MIN;
-  }
-  return null;
-}
 // 表單資料
 const formRef = ref(null);
 const form = reactive({
@@ -85,12 +50,29 @@ const rules = {
 // 監聽1: modelValue => 初始化彈窗
 watch(
   () => props.modelValue,
-  (v) => {
+  async (v) => {
     if (!v) return;
     systemStore.fetchAllOptions();
-    if (props.candidate) {
+    if (isEdit.value) {
+      // 編輯模式：直接回填傳入的數據
+      Object.assign(form, props.interview);
+      if (form.startTime && form.endTime) {
+        form.startTime = form.startTime.slice(0, 5);
+        form.endTime = form.endTime.slice(0, 5);
+        form.durationMin = toMinutes(form.endTime) - toMinutes(form.startTime);
+      }
+    } else if (props.candidate) {
+      // 新增模式
+      form.id = '';
       form.candidate_id = props.candidate.id;
       form.dept_id = props.candidate.dept_id;
+      // 計算面試輪次
+      try {
+        const res = await getCandidateInfoService(props.candidate.id);
+        form.interview_round = (res.data.interviews?.length || 0) + 1;
+      } catch {
+        form.interview_round = 1;
+      }
       form.title = `面試：${props.candidate.name} - 第 ${form.interview_round} 輪`;
     }
     adjustedOnce.value = false;
@@ -115,7 +97,7 @@ watch(
     const s = toMinutes(newStart);
     if (s !== null) {
       const next = s + newDuration;
-      endOutOfRange.value = next > END_MAX;
+      endOutOfRange.value = next > END_MAX_STR;
       form.endTime = toHHmm(next);
     }
   },
@@ -137,7 +119,7 @@ async function onSubmit() {
   if (!form.interviewer_id) return ElMessage.warning('請選擇面試官');
   const sMin = toMinutes(form.startTime);
   const eMin = sMin + form.durationMin;
-  if (eMin > END_MAX) {
+  if (eMin > END_MAX_STR) {
     return ElMessage.error('結束時間超出範圍 (20:30)，請縮短時長或提前開始');
   }
   try {
@@ -176,8 +158,13 @@ async function onSubmit() {
   // 4. 執行三表聯動
   loading.value = true;
   try {
-    await createInterviewService(form);
-    ElMessage.success('面試安排成功！已同步至該面試官的行事曆與任務清單');
+    if (isEdit.value) {
+      await updateInterviewService(form.id, form);
+      ElMessage.success('面試行程更新成功！');
+    } else {
+      await createInterviewService(form);
+      ElMessage.success('面試安排成功！已同步至該面試官的行事曆與任務清單');
+    }
     emit('refresh');
     handleClose();
   } catch (e) {
@@ -192,34 +179,19 @@ async function onSubmit() {
 </script>
 
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    title="安排面試"
-    width="560px"
-    @close="handleClose"
-    top="10vh"
-  >
+  <el-dialog :model-value="modelValue" :title="isEdit ? '編輯面試行程' : '安排新面試'" width="560px" @close="handleClose"
+    top="10vh">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" status-icon>
       <el-form-item label="應徵者">
-        <el-input :model-value="candidate?.name" disabled />
+        <el-input :model-value="isEdit ? (form.title.split('：')[1]?.split(' - ')[0]) : candidate?.name" disabled />
       </el-form-item>
 
       <el-form-item label="面試官" prop="interviewer_id">
-        <el-select
-          v-model="form.interviewer_id"
-          placeholder="請選擇面試官"
-          style="width: 100%"
-          filterable
-        >
-          <el-option
-            v-for="item in displayInterviewers"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          >
+        <el-select v-model="form.interviewer_id" placeholder="請選擇面試官" style="width: 100%" filterable>
+          <el-option v-for="item in displayInterviewers" :key="item.value" :label="item.label" :value="item.value">
             <span style="float: left">{{ item.label }}</span>
             <span style="float: right; color: #8492a6; font-size: 13px">
-              {{ systemStore.departments.find((d) => d.id === item.dept_id)?.name }}
+              {{systemStore.departments.find((d) => d.id === item.dept_id)?.name}}
             </span>
           </el-option>
         </el-select>
@@ -228,29 +200,16 @@ async function onSubmit() {
           已自動篩選「{{
             systemStore.departments.find((d) => d.id === form.dept_id)?.name
           }}」的面試官
-          <el-button type="primary" link @click="form.dept_id = ''" size="small"
-            >顯示全公司</el-button
-          >
+          <el-button type="primary" link @click="form.dept_id = ''" size="small">顯示全公司</el-button>
         </div>
       </el-form-item>
 
       <el-form-item label="面試日期" prop="date">
-        <el-date-picker
-          v-model="form.date"
-          type="date"
-          value-format="YYYY-MM-DD"
-          style="width: 100%"
-        />
+        <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
       </el-form-item>
 
       <el-form-item label="開始時間" prop="startTime">
-        <el-time-select
-          v-model="form.startTime"
-          start="08:00"
-          step="00:30"
-          end="20:00"
-          style="width: 100%"
-        />
+        <el-time-select v-model="form.startTime" start="08:00" step="00:30" end="20:00" style="width: 100%" />
       </el-form-item>
 
       <el-form-item label="面試時長" prop="durationMin">

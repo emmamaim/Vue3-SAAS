@@ -3,7 +3,6 @@ import { useUserStore } from '@/stores';
 import { ElMessage } from 'element-plus';
 
 import TasksPage from '@/pages/TasksPage.vue';
-import SchedulePage from '@/pages/SchedulePage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,14 +38,19 @@ const router = createRouter({
           },
         },
         {
+          path: 'bookings',
+          name: 'Bookings',
+          component: () => import('@/views/Bookings/BookingPage.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin', 'dept_hr', 'interviewer'],
+            title: '行事曆管理',
+          },
+        },
+        {
           path: 'tasks',
           component: TasksPage,
           meta: { requiresAuth: true, roles: ['interviewer'] },
-        },
-        {
-          path: 'schedule',
-          component: SchedulePage,
-          meta: { requiresAuth: true, roles: ['interviewer', 'dept_hr', 'super_admin'] },
         },
       ],
     },

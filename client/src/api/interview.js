@@ -13,7 +13,7 @@ export const createInterviewService = (data) => {
 export const updateInterviewService = (id, data) => {
   return request({
     url: `/interviews/${id}`,
-    method: 'put',
+    method: 'patch',
     data,
   });
 };
