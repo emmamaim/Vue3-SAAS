@@ -13,32 +13,33 @@ const isStaff = computed(() => userStore.userInfo.role === 'super_admin' || user
 // 使用者ID
 const myUserId = computed(() => userStore.userInfo.id)
 // 選中的面試官ID
-const selectedInterviewerId = ref(isStaff.value ? '' : myUserId.value)
+const selectedInterviewerId = ref(isStaff.value ? null : myUserId.value)
 // 獲取面試官列表 => 篩選
 const otherInterviewerOptions = computed(() => {
     return (systemStore.interviewerOptions || []).filter(opt => opt.value !== myUserId.value)
 })
 // 顯示：新增/編輯行程彈窗按鈕
-const isMyOwnSchedule = computed(() => { return selectedInterviewerId.value !== '' && selectedInterviewerId.value === myUserId.value })
+const isMyOwnSchedule = computed(() => {
+    if (isStaff.value) return false
+    return selectedInterviewerId.value !== '' && selectedInterviewerId.value === myUserId.value
+})
 
 // 監聽：篩選框變化 => 管理員/HR切換面試官，重新載入行程資料
-watch(selectedInterviewerId, (newId) => {
-    if (newId) {
-        BookingStore.fetchAll({ userId: newId })
+watch(selectedInterviewerId, async (newId) => {
+    console.log('當前切換到的 ID:', newId)
+    BookingStore.items = []
+    if (newId && newId !== undefined) {
+        BookingStore.items = []
+        await BookingStore.fetchAll({ userId: newId })
     } else {
         BookingStore.items = []
     }
-})
+}, { immediate: true })
 
 // 初始化載入
 onMounted(async () => {
-    // 管理員/HR => 加載面試官名單
     if (isStaff.value) {
         await systemStore.fetchAllOptions()
-    }
-    if (selectedInterviewerId.value) {
-        // 面試官 => 直接載入自己的行程資料
-        await BookingStore.fetchAll({ userId: selectedInterviewerId.value })
     }
 })
 
@@ -168,8 +169,6 @@ function openDayDetails(day) {
                 <div class="actions">
                     <el-select v-if="isStaff" v-model="selectedInterviewerId" placeholder="請選擇面試官" filterable clearable
                         style="width: 180px">
-                        <el-option :label="` (${userStore.userInfo.real_name})的行程`" :value="myUserId" />
-                        <el-divider v-if="otherInterviewerOptions.length" style="margin: 4px 0" />
                         <el-option v-for="item in otherInterviewerOptions" :key="item.value" :label="item.label"
                             :value="item.value" />
                     </el-select>
@@ -182,7 +181,7 @@ function openDayDetails(day) {
                 <template #date-cell="{ data }">
                     <!-- 日期單元格的外框 .cal-cell -->
                     <div class="cal-cell" :class="{ 'is-selected': data.day === selectedDate }"
-                        @click="openDayDetails(data.day)">
+                        @click="selectedDate = data.day">
                         <!-- 上半部：日期數字 + 當天行程數量tag -->
                         <div class="cal-top">
                             <span class="cal-day">

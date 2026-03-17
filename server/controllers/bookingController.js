@@ -10,9 +10,13 @@ export const getBookings = async (req, res) => {
     // 面試官 => 只能查看自己的行程
     const currentUserId = req.user.id;
     const currentUserRole = req.user.role;
-    let targetUserId = null;
-    // 面試官 => userId 強制設定為自己
-    if (!["super_admin", "dept_hr"].includes(currentUserRole) || !userId) {
+    const isStaff = ["super_admin", "dept_hr"].includes(currentUserRole);
+    let targetUserId;
+    if (isStaff) {
+      // 管理員/HR
+      targetUserId = userId || null; 
+    } else {
+      // 普通面試官：強制只能查自己，不准看別人的 ID
       targetUserId = currentUserId;
     }
     const data = await bookingModel.findAll({
