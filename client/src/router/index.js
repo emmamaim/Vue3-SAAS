@@ -2,8 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '@/stores';
 import { ElMessage } from 'element-plus';
 
-import TasksPage from '@/pages/TasksPage.vue';
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -49,7 +47,8 @@ const router = createRouter({
         },
         {
           path: 'tasks',
-          component: TasksPage,
+          name: 'Tasks',
+          component: () => import('@/views/Tasks/TasksPage.vue'),
           meta: { requiresAuth: true, roles: ['interviewer'] },
         },
       ],

@@ -20,7 +20,7 @@ const title = computed(() => {
     '/users': '用戶管理',
     '/candidates': '應徵者管理',
     '/tasks': '任務管理',
-    '/bookings': '面試管理',
+    '/bookings': '行事曆',
   }
   // 考慮fallback -> 防止加新路由時候標題變空白
   return map[route.path] ?? 'WorkHub'

@@ -15,7 +15,7 @@ export const getTasks = async (req, res) => {
   }
 };
 
-// 提交面試評價並結案
+// 提交面試評價
 export const completeInterview = async (req, res) => {
   try {
     const taskId = req.params.id;
@@ -31,11 +31,13 @@ export const completeInterview = async (req, res) => {
         .status(403)
         .json({ success: false, message: "無權操作此任務" });
     }
-    if (task.status === "done") {
-      return res
-        .status(400)
-        .json({ success: false, message: "該任務已完成，請勿重複提交" });
-    }
+    // 方便前端頁面展示（面試官可更改評價再次提交）
+    // if (task.status === "done") {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "該任務已完成，請勿重複提交" });
+    // }
+
     // 驗證面試評價結果
     if (!["pass", "fail", "pending"].includes(result)) {
       return res
@@ -45,11 +47,13 @@ export const completeInterview = async (req, res) => {
     // 執行更新
     await TaskModel.submitInterviewFeedback(taskId, {
       result,
-      comments: comments || "面試官未提供額外説明",
+      comments: comments.trim() || task.comments || "面試官未提供額外說明",
     });
+    const updatedTask = await TaskModel.getTaskWithFeedback(taskId);
     res.json({
       success: true,
       message: "面試評價提交成功，相關行程與面試紀錄已同步更新",
+      data: updatedTask,
     });
   } catch (error) {
     console.error("Complete Interview Error:", error);
@@ -71,7 +75,12 @@ export const updateTaskStatus = async (req, res) => {
         .json({ success: false, message: "無權修改此任務狀態" });
     }
     await TaskModel.updateStatus(id, status);
-    res.json({ success: true, message: "任務狀態已更新" });
+    const updatedTask = await TaskModel.getTaskWithFeedback(id);
+    res.json({
+      success: true,
+      message: "任務狀態已更新",
+      data: updatedTask,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "更新任務失敗" });
   }

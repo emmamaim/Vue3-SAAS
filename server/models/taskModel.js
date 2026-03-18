@@ -4,7 +4,7 @@ const TaskModel = {
   // 獲取任務列表
   findAllByUserId: async (userId) => {
     const sql = `
-            SELECT t.*, i.id as interview_id, i.candidate_id, i.interview_round, i.location
+            SELECT t.*, i.id as interview_id, i.candidate_id, i.interview_round, i.location, i.result, i.comments
             FROM tasks t
             LEFT JOIN interviews i ON t.id = i.task_id
             WHERE t.user_id = ?
@@ -16,6 +16,17 @@ const TaskModel = {
   // 獲取單筆任務詳情
   getById: async (id) => {
     const [rows] = await db.execute("SELECT * FROM tasks WHERE id = ?", [id]);
+    return rows[0] || null;
+  },
+  // 獲取任務關聯的面試評價結果
+  getTaskWithFeedback: async (taskId)=>{
+    const sql = `
+      SELECT t.*, i.result, i.comments, i.candidate_id, i.interview_round
+      FROM tasks t
+      LEFT JOIN interviews i ON t.id = i.task_id
+      WHERE t.id = ?
+      `;
+    const [rows]= await db.execute(sql, [taskId]);
     return rows[0] || null;
   },
   // 提交面試評價（三表同步更新）
