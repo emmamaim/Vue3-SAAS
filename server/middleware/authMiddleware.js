@@ -27,6 +27,13 @@ export const isAdmin = (req, res, next) => {
   next();
 };
 
+// 部門HR： 專門處理負責的人事數據
+export const isHr = (req, res, next) => {
+  if (req.user.role !== "dept_hr") {
+    return res.status(403).json({ message: "權限不足，僅限部門HR操作" });
+  }
+};
+
 // 業務操作者：管理員 + HR (負責應徵者管理、面試安排等)
 export const isStaff = (req, res, next) => {
   const { role } = req.user;
