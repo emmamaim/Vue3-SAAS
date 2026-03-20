@@ -1,4 +1,4 @@
-import db from "../config/db.js";
+import db from '../config/db.js';
 
 const DashboardModel = {
   // 管理員
@@ -33,7 +33,60 @@ const DashboardModel = {
       return {
         stats,
         sourceData,
+        trend
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // HR
+  getHrSummary: async (hrId) => {
+    // KPI: 部門總應徵者、部門職位數、部門今日面試量
+    const statSql = `
+      SELECT 
+        (SELECT COUNT(*) FROM candidates WHERE hr_id = ?) as myCandidates,
+        (SELECT COUNT(DISTINCT job_id) FROM candidates WHERE hr_id = ?)  as myActiveJobs,
+        (SELECT COUNT(*) FROM interviews WHERE hr_id = ? AND date = CURDATE()) as myTodayInterviews
+      `;
+    // 應徵者狀態分佈
+    const statusSql = `
+      SELECT status, COUNT(*) as count
+      FROM candidates WHERE hr_id = ?
+      GROUP BY status
+      `;
+    // 負責的面試趨勢
+    const trendSql = `
+      SELECT DATE_FORMAT(date, '%m-%d') as dateLabel, COUNT(*) as count
+      FROM interviews WHERE hr_id = ? AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
+      GROUP BY date ORDER BY date ASC
+      `;
+    // 時間線顯示
+    const upcomingSql = `
+      SELECT 
+        i.date, 
+        i.startTime, 
+        c.name as candidateName, 
+        u.real_name as interviewerName,
+        j.job_name
+      FROM interviews i
+      JOIN candidates c ON i.candidate_id = c.id
+      JOIN users u ON i.interviewer_id = u.id
+      JOIN jobs j ON c.job_id = j.id
+      WHERE i.hr_id = ? AND i.date >= CURDATE() AND i.status = 'scheduled'
+      ORDER BY i.date ASC, i.startTime ASC
+      LIMIT 5
+      `;
+    try {
+      const [[stats]] = await db.execute(statSql, [hrId, hrId, hrId]);
+      const [statusData] = await db.execute(statusSql, [hrId]);
+      const [trend] = await db.execute(trendSql, [hrId]);
+      const [upcoming] = await db.execute(upcomingSql, [hrId]);
+      return {
+        stats,
+        statusData,
         trend,
+        upcoming
       };
     } catch (error) {
       throw error;
@@ -79,12 +132,12 @@ const DashboardModel = {
       return {
         stats,
         distribution,
-        trend,
+        trend
       };
     } catch (error) {
       throw error;
     }
-  },
+  }
 };
 
 export default DashboardModel;

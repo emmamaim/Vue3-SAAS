@@ -8,6 +8,14 @@ export const getAdminDashboard = () => {
   });
 };
 
+// HR
+export const getHrDashboard = () => {
+  return request({
+    url: '/dashboard/hr',
+    method: 'get',
+  });
+};
+
 // 面試官
 export const getInterviewerDashboard = () => {
   return request({

@@ -17,7 +17,10 @@ import ResumeDrawer from './components/ResumeDrawer.vue';
 import CandidateInfoDialog from './components/CandidateInfoDialog.vue';
 import InterviewDialog from './components/InterviewDialog.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
 
+const route = useRoute();
+const router = useRouter();
 const systemStore = useSystemStore();
 const deptOptions = computed(() => systemStore.departments);
 const sourceOptions = computed(() => systemStore.sources);
@@ -75,6 +78,7 @@ const handleReset = () => {
   queryParams.status = '';
   queryParams.hr_id = '';
   queryParams.page = 1;
+  router.replace({ query: {} });
   getCandidatesList();
 };
 // 新增與編輯應徵者 => 打開抽屜
@@ -86,6 +90,7 @@ const handleEdit = (row) => {
   currentRow.value = { ...row };
   drawerVisible.value = true;
 };
+
 // 建立面試 => 打開彈窗
 const handleAddInterview = (row) => {
   selectedCandidate.value = {
@@ -95,6 +100,7 @@ const handleAddInterview = (row) => {
   };
   interviewVisible.value = true;
 };
+
 // 狀態標籤顏色
 const getStatusType = (status) => {
   const map = {
@@ -107,11 +113,24 @@ const getStatusType = (status) => {
   };
   return map[status] || 'info';
 };
+
 // 初始化挂載
 onMounted(async () => {
-  await systemStore.fetchAllOptions();
-  getCandidatesList();
+  loading.value = true;
+  try {
+    await systemStore.fetchAllOptions();
+    // 儀表板參數跳轉
+    if (route.query.hrId) {
+      queryParams.hr_id = Number(route.query.hrId);
+    }
+    getCandidatesList();
+  } catch (error) {
+    console.error('初始化失敗', error);
+  } finally {
+    loading.value = false;
+  }
 });
+
 // 查看履歷
 const resumePreviewVisible = ref(false);
 const previewUrl = ref('');
@@ -120,6 +139,7 @@ const handleViewResume = (url) => {
   previewUrl.value = url;
   resumePreviewVisible.value = true;
 };
+
 // 查看詳情
 const currentId = ref(null);
 const infoVisible = ref(false);
@@ -127,6 +147,7 @@ const handleViewDetail = async (id) => {
   currentId.value = id;
   infoVisible.value = true;
 };
+
 // 封存應徵者
 const handleArchive = async (row) => {
   try {
@@ -154,32 +175,73 @@ const handleArchive = async (row) => {
   }
 };
 </script>
+
 <template>
   <div class="candidate-management">
     <!-- 搜索與篩選區域 -->
     <el-card class="filter-card">
       <el-form :inline="true" :model="queryParams">
         <el-form-item label="關鍵字">
-          <el-input v-model="queryParams.keyword" placeholder="姓名 / 職位" clearable @keyup.enter="handleQuery" />
+          <el-input
+            v-model="queryParams.keyword"
+            placeholder="姓名 / 職位"
+            clearable
+            @keyup.enter="handleQuery"
+          />
         </el-form-item>
         <el-form-item label="部門">
-          <el-select v-model="queryParams.dept_id" placeholder="選擇部門" clearable style="width: 140px">
-            <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
+          <el-select
+            v-model="queryParams.dept_id"
+            placeholder="選擇部門"
+            clearable
+            style="width: 140px"
+          >
+            <el-option
+              v-for="item in deptOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="來源">
-          <el-select v-model="queryParams.source_id" placeholder="選擇來源" clearable style="width: 140px">
-            <el-option v-for="item in sourceOptions" :key="item.id" :label="item.name" :value="item.id" />
+          <el-select
+            v-model="queryParams.source_id"
+            placeholder="選擇來源"
+            clearable
+            style="width: 140px"
+          >
+            <el-option
+              v-for="item in sourceOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="狀態">
-          <el-select v-model="queryParams.status" placeholder="人才階段" clearable style="width: 140px">
-            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+          <el-select
+            v-model="queryParams.status"
+            placeholder="人才階段"
+            clearable
+            style="width: 140px"
+          >
+            <el-option
+              v-for="item in statusOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="負責 HR">
           <el-select v-model="queryParams.hr_id" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="item in hrOptions" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option
+              v-for="item in hrOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -206,8 +268,15 @@ const handleArchive = async (row) => {
     </el-card>
     <!-- 表格展示區域 -->
     <el-card class="table-card" style="margin-top: 20px">
-      <el-table v-loading="loading" :data="candidateList" border stripe align="center"
-        :cell-style="{ textAlign: 'center' }" :header-cell-style="{ textAlign: 'center' }">
+      <el-table
+        v-loading="loading"
+        :data="candidateList"
+        border
+        stripe
+        align="center"
+        :cell-style="{ textAlign: 'center' }"
+        :header-cell-style="{ textAlign: 'center' }"
+      >
         <el-table-column prop="name" label="姓名" />
         <el-table-column prop="position_name" label="應徵職位" />
         <el-table-column prop="dept_name" label="部門" />
@@ -216,7 +285,7 @@ const handleArchive = async (row) => {
         <el-table-column label="狀態" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" effect="light">
-              {{statusOptions.find((opt) => opt.value === row.status)?.label || row.status}}
+              {{ statusOptions.find((opt) => opt.value === row.status)?.label || row.status }}
             </el-tag>
           </template>
         </el-table-column>
@@ -255,8 +324,14 @@ const handleArchive = async (row) => {
       </el-table>
 
       <div class="pagination-container">
-        <el-pagination v-model:current-page="queryParams.page" v-model:page-size="queryParams.pageSize" :total="total"
-          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" @change="getCandidatesList" />
+        <el-pagination
+          v-model:current-page="queryParams.page"
+          v-model:page-size="queryParams.pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @change="getCandidatesList"
+        />
       </div>
     </el-card>
   </div>
@@ -267,7 +342,11 @@ const handleArchive = async (row) => {
   <!-- 應徵者詳情彈窗 -->
   <CandidateInfoDialog v-model="infoVisible" :id="currentId" />
   <!-- 安排面試彈窗 -->
-  <InterviewDialog v-model="interviewVisible" :candidate="selectedCandidate" @refresh="getCandidatesList" />
+  <InterviewDialog
+    v-model="interviewVisible"
+    :candidate="selectedCandidate"
+    @refresh="getCandidatesList"
+  />
 </template>
 
 <style scoped>

@@ -11,7 +11,7 @@ const role = userStore.userInfo?.role;
 <template>
     <div class="dashboard-container">
         <AdminDashboard v-if="role === 'super_admin'" />
-        <HRDashboard v-else-if="role === 'hr'" />
+        <HRDashboard v-else-if="role === 'dept_hr'" />
         <InterviewerDashboard v-else-if="role === 'interviewer'" />
     </div>
 </template>
