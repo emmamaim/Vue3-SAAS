@@ -67,159 +67,92 @@ onMounted(fetchData)
 </script>
 
 <template>
-    <div class="dashboard-page" v-loading="loading">
-        <el-row :gutter="16" class="kpi-row">
-            <el-col :xs="24" :sm="12" :md="8" class="mb-16">
-                <el-card class="kpi-card shadow-sm clickable-card" @click="goToTask">
-                    <div class="kpi-label">待評價任務</div>
-                    <div class="kpi-value" style="color: #E6A23C">{{ dashboardData.stats.pendingTasks }}</div>
-                </el-card>
-            </el-col>
-            <el-col :xs="12" :sm="12" :md="8" class="mb-16">
-                <el-card class="kpi-card shadow-sm clickable-card" @click="goToBooking">
-                    <div class="kpi-label">今日面試</div>
-                    <div class="kpi-value" style="color: #409EFF">{{ dashboardData.stats.todayInterviews }}</div>
-                </el-card>
-            </el-col>
-            <el-col :xs="12" :sm="24" :md="8" class="mb-16">
-                <el-card class="kpi-card shadow-sm">
-                    <div class="kpi-label">本月已完成</div>
-                    <div class="kpi-value" style="color: #67C23A">{{ dashboardData.stats.monthlyCompleted }}</div>
-                </el-card>
-            </el-col>
-        </el-row>
+  <div class="db-container" v-loading="loading">
+    <el-row :gutter="16">
+      <el-col :xs="24" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-kpi-card db-clickable shadow-sm" @click="goToTask">
+          <div class="db-kpi-label">待評價任務</div>
+          <div class="db-kpi-value" style="color: var(--el-color-warning)">
+            {{ dashboardData.stats.pendingTasks }}
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :xs="12" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-kpi-card db-clickable shadow-sm" @click="goToBooking">
+          <div class="db-kpi-label">今日面試</div>
+          <div class="db-kpi-value" style="color: var(--el-color-primary)">
+            {{ dashboardData.stats.todayInterviews }}
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :xs="12" :sm="24" :md="8" class="db-mb">
+        <el-card class="db-kpi-card shadow-sm">
+          <div class="db-kpi-label">本月已完成</div>
+          <div class="db-kpi-value" style="color: var(--el-color-success)">
+            {{ dashboardData.stats.monthlyCompleted }}
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-        <el-row :gutter="16" class="bottom-row">
-            <!-- 折線圖 -->
-            <el-col :xs="24" :md="10">
-                <el-card class="equal-card">
-                    <template #header>
-                        <div class="section-title">近七日面試趨勢</div>
-                    </template>
-                    <TrendChart :data="dashboardData.trend" title="面試人數" />
-                </el-card>
-            </el-col>
+    <el-row :gutter="16">
+      <el-col :xs="24" :md="10" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
+          <template #header>
+            <div class="db-section-title">近七日面試趨勢</div>
+          </template>
+          <TrendChart 
+            :data="dashboardData.trend" 
+            title="面試人數" 
+            color="#409EFF" 
+          />
+        </el-card>
+      </el-col>
 
-            <!-- 圓餅圖 -->
-            <el-col :xs="24" :sm="12" :md="6">
-                <el-card class="equal-card">
-                    <template #header>
-                        <div class="section-title">面試結果分佈</div>
-                    </template>
-                    <PieChart :data="formmtedPieData" />
-                </el-card>
-            </el-col>
+      <el-col :xs="24" :sm="12" :md="6" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
+          <template #header>
+            <div class="db-section-title">面試結果分佈</div>
+          </template>
+          <PieChart :data="formmtedPieData" />
+        </el-card>
+      </el-col>
 
-            <!-- 時間線 -->
-            <el-col :xs="24" :sm="12" :md="8">
-                <el-card class="equal-card">
-                    <template #header>
-                        <div class="section-title">近日面試行程</div>
-                    </template>
-                    <div class="timeline-wrapper">
-                        <el-empty v-if="bookingStore.upcoming.length === 0" description="暫無未來行程" :image-size="60" />
-                        <el-timeline v-else>
-                            <el-timeline-item v-for="b in bookingStore.upcoming" :key="b.id"
-                                :timestamp="`${b.date} ${b.startTime}`" :type="isToday(b.date) ? 'primary' : ''">
-                                <div class="booking-item">
-                                    <span class="candidate-name">{{ b.title }}</span>
-                                    <el-tag size="small" effect="plain" class="ml-2">{{ b.type || '面試' }}</el-tag>
-                                </div>
-                            </el-timeline-item>
-                        </el-timeline>
-                    </div>
-                </el-card>
-            </el-col>
-        </el-row>
-    </div>
+      <el-col :xs="24" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
+          <template #header>
+            <div class="db-section-title">近日面試行程</div>
+          </template>
+          <div class="db-timeline-wrapper">
+            <el-empty 
+              v-if="bookingStore.upcoming.length === 0" 
+              description="暫無未來行程" 
+              :image-size="60" 
+            />
+            <el-timeline v-else>
+              <el-timeline-item 
+                v-for="b in bookingStore.upcoming" 
+                :key="b.id"
+                :timestamp="`${b.date} ${b.startTime}`" 
+                :type="isToday(b.date) ? 'primary' : ''"
+              >
+                <div class="db-interview-item">
+                  <div class="db-interview-target">
+                    <span class="db-interview-candidate">{{ b.title }}</span>
+                    <el-tag size="small" effect="plain" type="info">{{ b.type || '面試' }}</el-tag>
+                  </div>
+                  </div>
+              </el-timeline-item>
+            </el-timeline>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
 </template>
 
 <style scoped>
-.dashboard-page {
-    padding: 12px;
-}
-
-.kpi-row {
-    margin-bottom: 0;
-}
-
-.mb-16 {
-    margin-bottom: 16px;
-}
-
-.kpi-card {
-    text-align: center;
-    border-radius: 8px;
-}
-
-.kpi-label {
-    font-size: 13px;
-    color: #909399;
-    margin-bottom: 4px;
-}
-
-.kpi-value {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.clickable-card {
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.clickable-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #409EFF;
-}
-
-/* --- 響應式高度處理 --- */
-/* 預設：電腦版等高 */
-.equal-card {
-    height: 400px;
-    margin-bottom: 16px;
-    border-radius: 8px;
-}
-
-.timeline-wrapper {
-    height: 320px;
-    overflow-y: auto;
-}
-
-/* 手機版微調  */
-@media (max-width: 767px) {
-    .equal-card {
-        height: auto;
-        min-height: 300px;
-        margin-bottom: 12px;
-    }
-
-    .timeline-wrapper {
-        height: 250px;
-    }
-
-    .kpi-value {
-        font-size: 20px;
-    }
-
-    .clickable-card:hover {
-        transform: none;
-    }
-}
-
-.section-title {
-    font-weight: bold;
-    font-size: 15px;
-}
-
-/* 滾動條優化 */
-.timeline-wrapper::-webkit-scrollbar {
-    width: 4px;
-}
-
-.timeline-wrapper::-webkit-scrollbar-thumb {
-    background-color: #e4e7ed;
-    border-radius: 10px;
-}
+@import '@/assets/dashboard.css';
 </style>

@@ -19,6 +19,7 @@ import InterviewDialog from './components/InterviewDialog.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 
+const isMobile = computed(() => window.innerWidth <= 768);
 const route = useRoute();
 const router = useRouter();
 const systemStore = useSystemStore();
@@ -178,10 +179,9 @@ const handleArchive = async (row) => {
 
 <template>
   <div class="candidate-management">
-    <!-- 搜索與篩選區域 -->
     <el-card class="filter-card">
-      <el-form :inline="true" :model="queryParams">
-        <el-form-item label="關鍵字">
+      <el-form :inline="true" :model="queryParams" class="responsive-search">
+        <el-form-item label="關鍵字" class="item-keyword">
           <el-input
             v-model="queryParams.keyword"
             placeholder="姓名 / 職位"
@@ -189,94 +189,66 @@ const handleArchive = async (row) => {
             @keyup.enter="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="部門">
-          <el-select
-            v-model="queryParams.dept_id"
-            placeholder="選擇部門"
-            clearable
-            style="width: 140px"
+
+        <div class="filter-grid">
+          <el-form-item label="部門">
+            <el-select v-model="queryParams.dept_id" placeholder="選擇部門" clearable>
+              <el-option
+                v-for="item in deptOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="來源">
+            <el-select v-model="queryParams.source_id" placeholder="選擇來源" clearable>
+              <el-option
+                v-for="item in sourceOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="狀態">
+            <el-select v-model="queryParams.status" placeholder="人才階段" clearable>
+              <el-option
+                v-for="item in statusOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="負責 HR">
+            <el-select v-model="queryParams.hr_id" placeholder="全部" clearable>
+              <el-option
+                v-for="item in hrOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </div>
+
+        <el-form-item class="item-btns">
+          <el-button type="primary" @click="handleQuery"
+            ><el-icon><Search /></el-icon>查詢</el-button
           >
-            <el-option
-              v-for="item in deptOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="來源">
-          <el-select
-            v-model="queryParams.source_id"
-            placeholder="選擇來源"
-            clearable
-            style="width: 140px"
+          <el-button @click="handleReset"
+            ><el-icon><RefreshLeft /></el-icon>重置</el-button
           >
-            <el-option
-              v-for="item in sourceOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="狀態">
-          <el-select
-            v-model="queryParams.status"
-            placeholder="人才階段"
-            clearable
-            style="width: 140px"
+          <el-button type="success" @click="handleAdd" class="btn-add-full"
+            ><el-icon><Plus /></el-icon>新增應徵者</el-button
           >
-            <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="負責 HR">
-          <el-select v-model="queryParams.hr_id" placeholder="全部" clearable style="width: 140px">
-            <el-option
-              v-for="item in hrOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">
-            <el-icon>
-              <Search />
-            </el-icon>
-            查詢
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon>
-              <RefreshLeft />
-            </el-icon>
-            重置
-          </el-button>
-          <el-button type="success" @click="handleAdd">
-            <el-icon>
-              <Plus />
-            </el-icon>
-            新增應徵者
-          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
-    <!-- 表格展示區域 -->
-    <el-card class="table-card" style="margin-top: 20px">
-      <el-table
-        v-loading="loading"
-        :data="candidateList"
-        border
-        stripe
-        align="center"
-        :cell-style="{ textAlign: 'center' }"
-        :header-cell-style="{ textAlign: 'center' }"
-      >
+
+    <el-card class="table-card desktop-only" style="margin-top: 20px">
+      <el-table v-loading="loading" :data="candidateList" border stripe align="center">
         <el-table-column prop="name" label="姓名" />
         <el-table-column prop="position_name" label="應徵職位" />
         <el-table-column prop="dept_name" label="部門" />
@@ -292,48 +264,99 @@ const handleArchive = async (row) => {
         <el-table-column label="履歷" width="100">
           <template #default="{ row }">
             <el-link v-if="row.resume_url" type="primary" @click="handleViewResume(row.resume_url)">
-              <el-icon>
-                <Document />
-              </el-icon>
-              查看
+              <el-icon><Document /></el-icon> 查看
             </el-link>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="createAt" label="投遞時間" width="180">
-          <template #default="{ row }">
-            {{ row.createAt ? row.createAt.slice(0, 10) : '-' }}
-          </template>
+          <template #default="{ row }">{{
+            row.createAt ? row.createAt.slice(0, 10) : '-'
+          }}</template>
         </el-table-column>
         <el-table-column label="操作" fixed="right" width="180">
           <template #default="{ row }">
-            <el-tooltip content="查看詳情" placement="top">
-              <el-button link type="primary" :icon="View" @click="handleViewDetail(row.id)" />
-            </el-tooltip>
-            <el-tooltip content="安排面試" placement="top">
-              <el-button link type="success" :icon="Calendar" @click="handleAddInterview(row)" />
-            </el-tooltip>
-            <el-tooltip content="編輯資料" placement="top">
-              <el-button link type="primary" :icon="Edit" @click="handleEdit(row)" />
-            </el-tooltip>
-            <el-tooltip content="封存應徵者" placement="top">
-              <el-button link type="danger" :icon="Box" @click="handleArchive(row)" />
-            </el-tooltip>
+            <el-tooltip content="查看詳情" placement="top"
+              ><el-button link type="primary" :icon="View" @click="handleViewDetail(row.id)"
+            /></el-tooltip>
+            <el-tooltip content="安排面試" placement="top"
+              ><el-button link type="success" :icon="Calendar" @click="handleAddInterview(row)"
+            /></el-tooltip>
+            <el-tooltip content="編輯資料" placement="top"
+              ><el-button link type="primary" :icon="Edit" @click="handleEdit(row)"
+            /></el-tooltip>
+            <el-tooltip content="封存應徵者" placement="top"
+              ><el-button link type="danger" :icon="Box" @click="handleArchive(row)"
+            /></el-tooltip>
           </template>
         </el-table-column>
       </el-table>
-
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="queryParams.page"
-          v-model:page-size="queryParams.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @change="getCandidatesList"
-        />
-      </div>
     </el-card>
+
+    <div class="mobile-only mobile-list-container" style="margin-top: 10px">
+      <div
+        v-for="item in candidateList"
+        :key="item.id"
+        class="m-card"
+        :class="`m-status-${item.status}`"
+      >
+        <div class="m-card-header" @click="item._expanded = !item._expanded">
+          <div class="m-title">
+            <span class="m-name">{{ item.name }}</span>
+            <span class="m-pos">{{ item.position_name }}</span>
+          </div>
+          <div class="m-right">
+            <el-tag :type="getStatusType(item.status)" size="small">{{
+              statusOptions.find((o) => o.value === item.status)?.label
+            }}</el-tag>
+            <el-icon class="m-arrow" :class="{ 'is-rotated': item._expanded }"
+              ><ArrowRight
+            /></el-icon>
+          </div>
+        </div>
+        <el-collapse-transition>
+          <div v-show="item._expanded" class="m-card-content">
+            <div class="m-detail-grid">
+              <div class="m-row"><span>部門：</span>{{ item.dept_name }}</div>
+              <div class="m-row"><span>來源：</span>{{ item.source_name }}</div>
+              <div class="m-row"><span>負責 HR：</span>{{ item.hr_name }}</div>
+              <div class="m-row"><span>投遞時間：</span>{{ item.createAt?.slice(0, 10) }}</div>
+            </div>
+            <div class="m-actions">
+              <el-button
+                v-if="item.resume_url"
+                type="primary"
+                link
+                @click="handleViewResume(item.resume_url)"
+                ><el-icon><Document /></el-icon> 查看履歷</el-button
+              >
+              <div class="m-btn-group">
+                <el-button circle :icon="View" @click="handleViewDetail(item.id)" />
+                <el-button
+                  circle
+                  type="success"
+                  :icon="Calendar"
+                  @click="handleAddInterview(item)"
+                />
+                <el-button circle type="primary" :icon="Edit" @click="handleEdit(item)" />
+                <el-button circle type="danger" :icon="Box" @click="handleArchive(item)" />
+              </div>
+            </div>
+          </div>
+        </el-collapse-transition>
+      </div>
+    </div>
+
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="queryParams.page"
+        v-model:page-size="queryParams.pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        :layout="isMobile ? 'total, prev, pager, next' : 'total, sizes, prev, pager, next, jumper'"
+        @change="getCandidatesList"
+      />
+    </div>
   </div>
   <!-- 新增/編輯抽屜 -->
   <CandidateDrawer v-model="drawerVisible" :data="currentRow" @refresh="getCandidatesList" />
@@ -352,30 +375,140 @@ const handleArchive = async (row) => {
 <style scoped>
 .candidate-management {
   padding: 20px;
+  background-color: var(--el-bg-color-page);
+  min-height: 100vh;
 }
-
+.filter-card {
+  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-light);
+}
 .pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 
-.filter-card {
-  background-color: #f8f9fa;
+/* 手機端優化 */
+@media (max-width: 768px) {
+  .candidate-management {
+    padding: 2px;
+  }
+  .filter-card :deep(.el-card__body) {
+    padding: 15px !important;
+  }
+  .desktop-only {
+    display: none;
+  }
+  .filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 0px;
+  }
+  .filter-grid :deep(.el-form-item) {
+    margin-right: 10px !important;
+  }
+  .filter-form :deep(.el-form-item) {
+    margin-bottom: 8px !important;
+  }
+  .item-keyword {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  .item-btns {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .item-btns .el-button {
+    flex: 1;
+  }
+  .btn-add-full {
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  /* 手機卡片與變色條 */
+  .m-card {
+    background-color: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border-left: 5px solid var(--el-border-color);
+    overflow: hidden;
+  }
+  .m-status-pending {
+    border-left-color: var(--el-color-info);
+  }
+  .m-status-screening {
+    border-left-color: var(--el-color-primary);
+  }
+  .m-status-interviewing {
+    border-left-color: var(--el-color-warning);
+  }
+  .m-status-offer,
+  .m-status-hired {
+    border-left-color: var(--el-color-success);
+  }
+  .m-status-rejected {
+    border-left-color: var(--el-color-danger);
+  }
+
+  .m-card-header {
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .m-title {
+    display: flex;
+    flex-direction: column;
+  }
+  .m-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--el-text-color-primary);
+  }
+  .m-pos {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+  .m-arrow {
+    transition: transform 0.3s;
+    color: var(--el-text-color-placeholder);
+  }
+  .m-arrow.is-rotated {
+    transform: rotate(90deg);
+  }
+
+  .m-card-content {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--el-border-color-extra-light);
+  }
+  .m-detail-grid {
+    padding: 10px 0;
+    font-size: 13px;
+    color: var(--el-text-color-regular);
+  }
+  .m-row span {
+    color: var(--el-text-color-secondary);
+  }
+  .m-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .m-btn-group {
+    display: flex;
+    gap: 8px;
+  }
 }
 
-.no-preview {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  margin: 10px;
-}
-
-iframe {
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none;
+  }
 }
 </style>

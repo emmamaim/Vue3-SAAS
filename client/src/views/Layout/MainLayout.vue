@@ -15,12 +15,20 @@ import {
   User,
   Setting,
   Avatar,
+  Sunny,
+  Moon,
 } from '@element-plus/icons-vue';
+// 引入 VueUse 的主題工具
+import { useDark, useToggle } from '@vueuse/core';
 
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
 const isCollapse = ref(false);
+
+// 主題切換
+const isDark = useDark();
+const toggleDark = useToggle(isDark);
 
 // 判斷是否為手機模式
 const checkMobile = () => {
@@ -145,6 +153,13 @@ onUnmounted(() => {
         </div>
 
         <div class="header-right">
+          <el-button
+            circle
+            :icon="isDark ? Sunny : Moon"
+            @click="toggleDark()"
+            class="theme-toggle-btn"
+          />
+          <el-divider direction="vertical" class="header-divider" />
           <el-dropdown>
             <span class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
@@ -180,7 +195,7 @@ onUnmounted(() => {
 }
 
 .app-aside {
-  background-color: #fff;
+  background-color: var(--el-bg-color);
   border-right: 1px solid var(--el-border-color-light);
   transition: width 0.3s;
   display: flex;
@@ -231,7 +246,7 @@ onUnmounted(() => {
 }
 
 .app-header {
-  background: #fff;
+  background: var(--el-bg-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -242,7 +257,7 @@ onUnmounted(() => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
 }
 
 .collapse-btn {
@@ -269,17 +284,21 @@ onUnmounted(() => {
 }
 
 .app-main {
-  background: #f0f2f5;
+  background: var(--el-bg-color-page);
   padding: 8px;
 }
 
-/* 手機調整導航列樣式 */
+/* 手機端 */
 @media (max-width: 768px) {
+  .app-main {
+    padding: 5px;
+  }
   .collapse-btn {
     display: none !important;
   }
   .app-aside {
-    width: 64px !important;
+    background-color: var(--el-bg-color) !important;
+    width: 60px !important;
   }
   .brand span {
     display: none;

@@ -116,14 +116,25 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <el-dialog :model-value="visible" :title="isEdit ? '編輯用戶' : '新增用戶'" width="500px" @close="handleClose">
+  <el-dialog :model-value="visible" :title="isEdit ? '編輯用戶' : '新增用戶'" @close="handleClose">
     <el-form :model="form" ref="formRef" :rules="rules" label-width="100px">
       <el-form-item label="帳號" prop="username" for="username">
-        <el-input v-model="form.username" :disabled="isEdit" id="username" placeholder="建議使用英文名" />
+        <el-input
+          v-model="form.username"
+          :disabled="isEdit"
+          id="username"
+          placeholder="建議使用英文名"
+        />
       </el-form-item>
 
       <el-form-item :label="isEdit ? '重設密碼' : '初始密碼'" prop="password" for="password">
-        <el-input v-model="form.password" type="password" id="password" show-password placeholder="不修改請留空" />
+        <el-input
+          v-model="form.password"
+          type="password"
+          id="password"
+          show-password
+          placeholder="不修改請留空"
+        />
       </el-form-item>
 
       <el-form-item label="真實姓名" prop="real_name" for="real_name">
@@ -132,7 +143,12 @@ const submitForm = async () => {
 
       <el-form-item label="所屬部門" prop="dept_id" for="dept_id">
         <el-select v-model="form.dept_id" id="dept_id" placeholder="請選擇部門" style="width: 100%">
-          <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
+          <el-option
+            v-for="item in deptOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
         </el-select>
       </el-form-item>
 
@@ -151,3 +167,17 @@ const submitForm = async () => {
     </template>
   </el-dialog>
 </template>
+
+<style>
+/* 電腦端 */
+.el-dialog {
+  width: 500px;
+}
+
+/* 手機端 */
+@media (max-width: 500px) {
+  .el-dialog {
+    width: 90%;
+  }
+}
+</style>

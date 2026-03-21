@@ -206,9 +206,13 @@ const currentItem = computed(() => {
         >
           <div
             class="icon-box"
-            :style="{ backgroundColor: activeTab === tab.id ? tab.color : '#f4f4f5' }"
+            :style="{
+              backgroundColor: activeTab === tab.id ? tab.color : 'var(--el-fill-color-darker)',
+            }"
           >
-            <el-icon :style="{ color: activeTab === tab.id ? '#fff' : '#909399' }">
+            <el-icon
+              :style="{ color: activeTab === tab.id ? '#fff' : 'var(--el-text-color-secondary)' }"
+            >
               <component :is="tab.icon" />
             </el-icon>
           </div>
@@ -374,7 +378,7 @@ const currentItem = computed(() => {
 }
 
 .nav-card {
-  background: #fff;
+  background: var(--el-bg-color);
   padding: 16px 20px;
   border-radius: 16px;
   display: flex;
@@ -382,20 +386,24 @@ const currentItem = computed(() => {
   gap: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #f0f0f2;
+  border: 1px solid var(--el-border-color-light);
   position: relative;
   margin-bottom: 10px;
 }
 
 .nav-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--el-box-shadow-light);
 }
 
 .nav-card.active {
-  border-color: #409eff;
-  background: #fff;
+  border-color: var(--el-color-primary);
+  background: var(--el-bg-color);
   box-shadow: 0 8px 25px rgba(64, 158, 255, 0.15);
+}
+
+.nav-card .icon-box {
+  background-color: var(--el-fill-color-light);
 }
 
 .icon-box {
@@ -412,7 +420,7 @@ const currentItem = computed(() => {
 .nav-card .label {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .active-dot {
@@ -420,7 +428,7 @@ const currentItem = computed(() => {
   right: 15px;
   width: 6px;
   height: 6px;
-  background: #409eff;
+  background: var(--el-color-primary);
   border-radius: 50%;
 }
 
@@ -434,16 +442,16 @@ const currentItem = computed(() => {
 }
 
 .glass-module {
-  background: #fff;
+  background: var(--el-bg-color);
   border-radius: 20px;
-  border: 1px solid #f0f0f2;
-  height: 100%;
+  border: 1px solid var(--el-border-color-light);
+  height: 93%;
   display: flex;
   flex-direction: column;
 }
 
 .list-module {
-  background: #fafbfc;
+  background: var(--el-fill-color-blank);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -467,7 +475,7 @@ const currentItem = computed(() => {
 
 .mini-item-card {
   padding: 14px;
-  background: #fff;
+  background: var(--el-bg-color);
   border-radius: 12px;
   margin-bottom: 10px;
   cursor: pointer;
@@ -478,19 +486,24 @@ const currentItem = computed(() => {
   transition: 0.2s;
 }
 
+.mini-item-card:hover {
+  background: var(--el-fill-color-light);
+}
+
 .mini-item-card.active {
-  border-color: #409eff;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
 }
 
 .mini-item-card .name {
   font-size: 14px;
   font-weight: 600;
+  color: var(--el-text-color-primary);
 }
 
 .mini-item-card .sub {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-top: 2px;
 }
 
@@ -503,11 +516,12 @@ const currentItem = computed(() => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 30px;
+  color: var(--el-text-color-primary);
 }
 
 .btn-group {
   margin-top: 30px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--el-border-color-lighter);
   padding-top: 20px;
 }
 
@@ -532,8 +546,8 @@ const currentItem = computed(() => {
 /* 平板 */
 @media (min-width: 600px) and (max-width: 992px) {
   .list-module {
-    height: 600px;
-    margin-bottom: 20px;
+    height: 620px;
+    margin-bottom: 0px;
   }
 }
 

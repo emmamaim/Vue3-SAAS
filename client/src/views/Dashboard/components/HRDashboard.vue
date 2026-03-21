@@ -62,34 +62,41 @@ const isToday = (dateStr) => {
 // 參數跳轉
 const goToCandidates = () => {
   router.push({
-    path:'/candidates',
-    query:{
-        hrId:userStore.userInfo.id,
-    }});
+    path: '/candidates',
+    query: {
+      hrId: userStore.userInfo.id,
+    },
+  });
 };
 
 onMounted(fetchData);
 </script>
 
 <template>
-  <div class="dashboard-page" v-loading="loading">
-    <el-row :gutter="16" class="kpi-row">
-      <el-col :xs="24" :sm="12" :md="8" class="mb-16">
-        <el-card class="kpi-card shadow-sm clickable-card" @click="goToCandidates">
-          <div class="kpi-label">負責應徵者</div>
-          <div class="kpi-value" style="color: #409eff">{{ dashboardData.stats.myCandidates }}</div>
+  <div class="db-container" v-loading="loading">
+    <el-row :gutter="16">
+      <el-col :xs="24" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-kpi-card db-clickable shadow-sm" @click="goToCandidates">
+          <div class="db-kpi-label">負責應徵者</div>
+          <div class="db-kpi-value" style="color: var(--el-color-primary)">
+            {{ dashboardData.stats.myCandidates }}
+          </div>
         </el-card>
       </el-col>
-      <el-col :xs="12" :sm="12" :md="8" class="mb-16">
-        <el-card class="kpi-card shadow-sm">
-          <div class="kpi-label">活躍職位數</div>
-          <div class="kpi-value" style="color: #67c23a">{{ dashboardData.stats.myActiveJobs }}</div>
+
+      <el-col :xs="12" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-kpi-card shadow-sm">
+          <div class="db-kpi-label">活躍職位數</div>
+          <div class="db-kpi-value" style="color: var(--el-color-success)">
+            {{ dashboardData.stats.myActiveJobs }}
+          </div>
         </el-card>
       </el-col>
-      <el-col :xs="12" :sm="24" :md="8" class="mb-16">
-        <el-card class="kpi-card shadow-sm">
-          <div class="kpi-label">今日安排面試</div>
-          <div class="kpi-value" style="color: #e6a23c">
+
+      <el-col :xs="12" :sm="24" :md="8" class="db-mb">
+        <el-card class="db-kpi-card shadow-sm">
+          <div class="db-kpi-label">今日安排面試</div>
+          <div class="db-kpi-value" style="color: var(--el-color-warning)">
             {{ dashboardData.stats.myTodayInterviews }}
           </div>
         </el-card>
@@ -97,9 +104,11 @@ onMounted(fetchData);
     </el-row>
 
     <el-row :gutter="16">
-      <el-col :xs="24" :md="10">
-        <el-card class="equal-card">
-          <template #header><div class="section-title">人才面試趨勢</div></template>
+      <el-col :xs="24" :md="10" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
+          <template #header>
+            <div class="db-section-title">人才面試趨勢</div>
+          </template>
           <TrendChart
             v-if="!loading && dashboardData.trend.length > 0"
             :data="dashboardData.trend"
@@ -110,20 +119,22 @@ onMounted(fetchData);
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="equal-card">
-          <template #header><div class="section-title">人才庫狀態</div></template>
+      <el-col :xs="24" :sm="12" :md="6" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
+          <template #header>
+            <div class="db-section-title">人才庫狀態</div>
+          </template>
           <PieChart v-if="!loading && formattedPieData.length > 0" :data="formattedPieData" />
           <el-empty v-else-if="!loading" description="暫無狀態數據" :image-size="60" />
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :sm="12" :md="8">
-        <el-card class="equal-card">
+      <el-col :xs="24" :sm="12" :md="8" class="db-mb">
+        <el-card class="db-chart-card shadow-sm">
           <template #header>
-            <div class="section-title">待進行面試監控</div>
+            <div class="db-section-title">待進行面試</div>
           </template>
-          <div class="timeline-wrapper">
+          <div class="db-timeline-wrapper">
             <el-empty
               v-if="dashboardData.upcoming.length === 0"
               description="暫無待進行面試"
@@ -136,13 +147,13 @@ onMounted(fetchData);
                 :timestamp="`${item.date} ${item.startTime.slice(0, 5)}`"
                 :type="isToday(item.date) ? 'primary' : ''"
               >
-                <div class="interview-item">
-                  <div class="target">
-                    <span class="candidate">{{ item.candidateName }}</span>
-                    <span class="job">應徵 {{ item.job_name }}</span>
+                <div class="db-interview-item">
+                  <div class="db-interview-target">
+                    <span class="db-interview-candidate">{{ item.candidateName }}</span>
+                    <span class="db-interview-job">應徵 {{ item.job_name }}</span>
                   </div>
-                  <div class="assignment">
-                    <el-tag size="small" effect="light" type="info">
+                  <div class="db-interview-assignment">
+                    <el-tag size="small" effect="plain" type="info">
                       面試官：{{ item.interviewerName }}
                     </el-tag>
                   </div>
@@ -157,78 +168,5 @@ onMounted(fetchData);
 </template>
 
 <style scoped>
-.dashboard-page {
-  padding: 12px;
-}
-.mb-16 {
-  margin-bottom: 16px;
-}
-.kpi-card {
-  text-align: center;
-  border-radius: 8px;
-}
-.kpi-label {
-  font-size: 13px;
-  color: #909399;
-  margin-bottom: 4px;
-}
-.kpi-value {
-  font-size: 24px;
-  font-weight: bold;
-}
-.clickable-card {
-  cursor: pointer;
-  transition: 0.3s;
-}
-.clickable-card:hover {
-  transform: translateY(-4px);
-  border-color: #409eff;
-}
-.equal-card {
-  height: 420px;
-  margin-bottom: 16px;
-  border-radius: 8px;
-}
-.section-title {
-  font-weight: bold;
-  font-size: 15px;
-}
-
-/* 時間線內部樣式 */
-.timeline-wrapper {
-  height: 340px;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-.interview-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.target {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.candidate {
-  font-weight: bold;
-  color: #303133;
-  font-size: 14px;
-}
-.job {
-  font-size: 12px;
-  color: #909399;
-}
-.assignment {
-  margin-top: 2px;
-}
-
-/* 滾動條優化 */
-.timeline-wrapper::-webkit-scrollbar {
-  width: 4px;
-}
-.timeline-wrapper::-webkit-scrollbar-thumb {
-  background: #e4e7ed;
-  border-radius: 4px;
-}
+@import '@/assets/dashboard.css';
 </style>
