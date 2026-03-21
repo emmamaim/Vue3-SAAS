@@ -1,78 +1,86 @@
-import express from "express";
+import express from 'express';
 // 引入cors: 允許來自 Vue 前端的請求進入
-import cors from "cors";
-import "dotenv/config";
-import path from "path";
-import { fileURLToPath } from "url";
+import cors from 'cors';
+import 'dotenv/config';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 // 引入中間件 (新增權限校驗)
 import {
   auth,
   isAdmin,
   isStaff,
-  isInterviewer,
-} from "./middleware/authMiddleware.js";
+  isInterviewer
+} from './middleware/authMiddleware.js';
 // 引入資料庫和路由
-import db from "./config/db.js";
+import db from './config/db.js';
 
-import systemRoutes from "./routes/systemRoutes.js";
-import dashRoutes from "./routes/dashboardRoutes.js";
+import systemRoutes from './routes/systemRoutes.js';
+import dashRoutes from './routes/dashboardRoutes.js';
 
-import userRoutes from "./routes/userRoutes.js";
-import deptRoutes from "./routes/deptRoutes.js";
+import userRoutes from './routes/userRoutes.js';
 
-import candidateRoutes from "./routes/candidateRoutes.js";
-import interviewRoutes from "./routes/interviewRoutes.js";
+import candidateRoutes from './routes/candidateRoutes.js';
+import interviewRoutes from './routes/interviewRoutes.js';
 
-import taskRoutes from "./routes/taskRoutes.js";
-import bookingRoutes from "./routes/bookingRoutes.js";
+import taskRoutes from './routes/taskRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 初始化檢查：確保uploads資料夾存在
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+  console.log('已自動建立 uploads 資料夾');
+}
+
 // 中間件設定
 app.use(cors());
 app.use(express.json());
+// 增加解析 urlencoded 資料 (處理 form 提交)
+app.use(express.urlencoded({ extended: true }));
 
 // 靜態檔案服務
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 註冊路徑
 // 1. 公共/系統層/數據分析
-app.use("/api/system", systemRoutes);
+app.use('/api/system', systemRoutes);
 app.use('/api/dashboard', dashRoutes);
 
 // 2. 系統管理層 (僅限超級管理員)
-app.use("/api/departments", auth, isAdmin, deptRoutes);
-app.use("/api/users", userRoutes);
+app.use('/api/users', userRoutes);
 
 // 3. 業務操作層 (管理員與 HR)
-app.use("/api/candidates", auth, isStaff, candidateRoutes);
-app.use("/api/interviews", auth, isStaff, interviewRoutes);
+app.use('/api/candidates', auth, isStaff, candidateRoutes);
+app.use('/api/interviews', auth, isStaff, interviewRoutes);
 
 // 4. 個人執行層 (面試官)
-app.use("/api/tasks", auth, isInterviewer, taskRoutes);
-app.use("/api/bookings", auth, bookingRoutes);
+app.use('/api/tasks', auth, isInterviewer, taskRoutes);
+app.use('/api/bookings', auth, bookingRoutes);
 
-// 錯誤處理中間件
+// 資料庫與伺服器啟動
 // 1. 測試資料庫連線
 db.getConnection()
   .then((conn) => {
-    console.log("雲端資料庫連線成功！");
+    console.log('雲端資料庫連線成功！');
     conn.release();
   })
   .catch((err) => {
-    console.error("資料庫連線失敗:", err.message);
+    console.error('資料庫連線失敗:', err.message);
   });
 
 // 2. 真正的錯誤處理中間件
 app.use((err, req, res, next) => {
-  console.log("!!! 捕捉到後端錯誤 !!!");
+  console.log('!!! 捕捉到後端錯誤 !!!');
   console.error(err.stack);
   res.status(500).json({
-    message: err.message || "系統發生錯誤",
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    message: err.message || '系統發生錯誤',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 

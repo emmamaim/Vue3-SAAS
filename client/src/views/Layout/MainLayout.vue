@@ -1,78 +1,133 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores'
-import { Menu as IconMenu, Calendar, DataBoard, Expand, Fold, UserFilled, ArrowDown, SwitchButton, List, User } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores';
+import {
+  Menu as IconMenu,
+  Calendar,
+  DataBoard,
+  Expand,
+  Fold,
+  UserFilled,
+  ArrowDown,
+  SwitchButton,
+  List,
+  User,
+  Setting,
+  Avatar,
+} from '@element-plus/icons-vue';
 
-// 建立store / router / route 實例
-const userStore = useUserStore()
-const router = useRouter()
-const route = useRoute()
-//sidebar 收縮
-const isCollapse = ref(false)
-console.log('當前用戶角色:', userStore.userInfo?.role)
+const userStore = useUserStore();
+const router = useRouter();
+const route = useRoute();
+const isCollapse = ref(false);
+
+// 判斷是否為手機模式
+const checkMobile = () => {
+  if (window.innerWidth <= 768) {
+    isCollapse.value = true;
+  }
+};
+
 // 切換路由後自動更新 -> el-menu高亮
-const activePath = computed(() => route.path)
+const activePath = computed(() => route.path);
+
 // 動態標題
 const title = computed(() => {
   const map = {
     '/dashboard': '儀表板',
+    '/system': '系統配置',
     '/users': '用戶管理',
     '/candidates': '應徵者管理',
     '/tasks': '任務管理',
     '/bookings': '行事曆',
-  }
+  };
   // 考慮fallback -> 防止加新路由時候標題變空白
-  return map[route.path] ?? 'WorkHub'
-})
+  return map[route.path] ?? 'WorkHub';
+});
 
 // 登出
 const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
-}
+  userStore.logout();
+  router.push('/login');
+};
+
+onMounted(() => {
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile);
+});
 </script>
 
 <template>
   <el-container class="app-shell">
     <el-aside :width="isCollapse ? '64px' : '220px'" class="app-aside">
       <div class="brand">
-        <el-icon v-if="isCollapse" size="24px">
-          <IconMenu />
-        </el-icon>
-        <span v-else>工作管理平台</span>
+        <el-icon size="24px"><IconMenu /></el-icon>
+        <span v-if="!isCollapse">工作管理平台</span>
       </div>
 
-      <el-menu :default-active="activePath" class="app-menu" :collapse="isCollapse" :collapse-transition="false" router>
-        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/users">
-          <el-icon>
-            <User />
-          </el-icon>
-          <template #title>用戶管理</template>
-        </el-menu-item>
+      <el-menu
+        :default-active="activePath"
+        class="app-menu"
+        :collapse="isCollapse"
+        :collapse-transition="false"
+        router
+      >
         <el-menu-item index="/dashboard">
           <el-icon>
             <DataBoard />
           </el-icon>
+
           <template #title>儀表板</template>
         </el-menu-item>
-        <el-menu-item v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role)" index="/candidates">
+
+        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/system">
+          <el-icon>
+            <Setting />
+          </el-icon>
+
+          <template #title>系統配置</template>
+        </el-menu-item>
+
+        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/users">
           <el-icon>
             <User />
           </el-icon>
+
+          <template #title>用戶管理</template>
+        </el-menu-item>
+
+        <el-menu-item
+          v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role)"
+          index="/candidates"
+        >
+          <el-icon>
+            <Avatar />
+          </el-icon>
+
           <template #title>應徵者管理</template>
         </el-menu-item>
+
         <el-menu-item v-if="userStore.userInfo?.role === 'interviewer'" index="/tasks">
           <el-icon>
             <List />
           </el-icon>
+
           <template #title>任務管理</template>
         </el-menu-item>
-        <el-menu-item v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
-          index="/bookings">
+
+        <el-menu-item
+          v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
+          index="/bookings"
+        >
           <el-icon>
             <Calendar />
           </el-icon>
+
           <template #title>面試行程</template>
         </el-menu-item>
       </el-menu>
@@ -85,6 +140,7 @@ const handleLogout = () => {
             <Expand v-if="isCollapse" />
             <Fold v-else />
           </el-icon>
+
           <span class="breadcrumb-text">{{ title }}</span>
         </div>
 
@@ -92,17 +148,18 @@ const handleLogout = () => {
           <el-dropdown>
             <span class="user-info">
               <el-avatar :size="32" :icon="UserFilled" />
+
               <span class="username">{{ userStore.userInfo?.username || '使用者' }}</span>
+
               <el-icon>
                 <ArrowDown />
               </el-icon>
             </span>
+
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="handleLogout">
-                  <el-icon>
-                    <SwitchButton />
-                  </el-icon>退出登入
+                  <el-icon> <SwitchButton /> </el-icon>退出登入
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -213,6 +270,22 @@ const handleLogout = () => {
 
 .app-main {
   background: #f0f2f5;
-  padding: 20px;
+  padding: 8px;
+}
+
+/* 手機調整導航列樣式 */
+@media (max-width: 768px) {
+  .collapse-btn {
+    display: none !important;
+  }
+  .app-aside {
+    width: 64px !important;
+  }
+  .brand span {
+    display: none;
+  }
+  .header-left {
+    padding-left: 5px;
+  }
 }
 </style>

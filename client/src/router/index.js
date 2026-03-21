@@ -26,6 +26,16 @@ const router = createRouter({
           component: () => import('@/views/Users/UserManagement.vue'),
           meta: { requiresAuth: true, roles: ['super_admin'] },
         },
+        {
+          path: 'system',
+          name: 'SystemSettings',
+          component: () => import('@/views/System/SystemSettings.vue'),
+          meta: {
+            requiresAuth: true,
+            roles: ['super_admin'],
+            title: '系統基礎配置',
+          },
+        },
         // 允許管理員與HR進入
         {
           path: 'candidates',
@@ -45,6 +55,7 @@ const router = createRouter({
             title: '行事曆管理',
           },
         },
+        // 面試官專用頁面
         {
           path: 'tasks',
           name: 'Tasks',
