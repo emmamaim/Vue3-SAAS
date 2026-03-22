@@ -1,10 +1,28 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { createCandidateService, updateCandidateService } from '@/api/candidate';
 import { UploadFilled } from '@element-plus/icons-vue';
 import { useSystemStore } from '@/stores';
-// 響應式選項數據
+
+// 動態計算抽屜寬度
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+window.addEventListener('resize',handleResize);
+const isMobile = computed(() => windowWidth.value <= 480);
+const isTablet = computed(() => windowWidth.value <= 1024);
+const drawerSize = computed(() => {
+  if (isMobile.value) return '90%';
+  if (isTablet.value) return '70%';
+  return '50%';
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
+// 選項數據
 const systemStore = useSystemStore();
 const deptOptions = computed(() => systemStore.departments);
 const sourceOptions = computed(() => systemStore.sources);
@@ -53,6 +71,8 @@ const rules = {
   dept_id: [{ required: true, message: '請選擇部門', trigger: 'change' }],
   job_id: [{ required: true, message: '請選擇職位', trigger: 'change' }],
   source_id: [{ required: true, message: '請選擇來源', trigger: 'change' }],
+  status: [{ required: true, message: '請選擇狀態', trigger: 'change' }],
+  hr_id: [{ required: true, message: '請選擇負責人', trigger: 'change' }],
 };
 // 重置表單
 const resetForm = () => {
@@ -87,13 +107,13 @@ watch(
       form.value = {
         ...props.data,
         job_id: props.data.job_id ? Number(props.data.job_id) : '',
-        resume: null
+        resume: null,
       };
     } else if (val) {
       isEdit.value = false;
       resetForm();
     }
-  }
+  },
 );
 // 處理檔案切換
 const handleFileChange = (file) => {
@@ -106,7 +126,7 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
     // 找出選中職位的類別ID
-    const selectedJob = jobOptions.value.find(j => Number(j.id) === Number(form.value.job_id));
+    const selectedJob = jobOptions.value.find((j) => Number(j.id) === Number(form.value.job_id));
     const category_id = selectedJob ? selectedJob.category_id : 1;
     // 構建FormData
     const formData = new FormData();
@@ -151,30 +171,41 @@ const submitForm = async () => {
 };
 </script>
 <template>
-  <el-drawer :model-value="modelValue" :title="isEdit ? '編輯應徵者' : '錄入應徵者'" size="50%" @close="handleClose">
+  <el-drawer
+    :model-value="modelValue"
+    :title="isEdit ? '編輯應徵者' : '錄入應徵者'"
+    :size="drawerSize"
+    @close="handleClose"
+    class="candidate-drawer"
+  >
     <el-form :model="form" label-position="top" :rules="rules" ref="formRef">
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="姓名" prop="name">
             <el-input v-model="form.name" placeholder="請輸入姓名" />
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="應徵職位" prop="job_id">
             <el-select v-model="form.job_id" placeholder="請選擇職位" style="width: 100%">
-              <el-option v-for="item in jobOptions" :key="item.id" :label="item.job_name" :value="Number(item.id)" />
+              <el-option
+                v-for="item in jobOptions"
+                :key="item.id"
+                :label="item.job_name"
+                :value="Number(item.id)"
+              />
             </el-select>
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="Email" prop="email">
             <el-input v-model="form.email" placeholder="example@hr.com" />
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="電話" prop="phone">
             <el-input v-model="form.phone" placeholder="0912345678" />
           </el-form-item>
@@ -182,34 +213,54 @@ const submitForm = async () => {
       </el-row>
 
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="所屬部門" prop="dept_id">
             <el-select v-model="form.dept_id" placeholder="選擇部門" style="width: 100%">
-              <el-option v-for="item in deptOptions" :key="item.id" :label="item.name" :value="item.id" />
+              <el-option
+                v-for="item in deptOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="來源渠道" prop="source_id">
             <el-select v-model="form.source_id" placeholder="選擇來源" style="width: 100%">
-              <el-option v-for="item in sourceOptions" :key="item.id" :label="item.name" :value="item.id" />
+              <el-option
+                v-for="item in sourceOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
             </el-select>
           </el-form-item>
         </el-col>
       </el-row>
 
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="當前狀態" prop="status">
             <el-select v-model="form.status" style="width: 100%">
-              <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option
+                v-for="item in statusOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="11" :sm="12">
           <el-form-item label="負責 HR" prop="hr_id">
             <el-select v-model="form.hr_id" placeholder="選擇負責人" style="width: 100%" clearable>
-              <el-option v-for="item in hrOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option
+                v-for="item in hrOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
           </el-form-item>
         </el-col>
@@ -238,3 +289,11 @@ const submitForm = async () => {
     </template>
   </el-drawer>
 </template>
+
+<style>
+@media (max-width: 480px) {
+  .candidate-drawer .el-drawer__body {
+    padding: 0 0 0 10px !important;
+  }
+}
+</style>

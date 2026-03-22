@@ -9,6 +9,7 @@ import {
   Edit,
   Box,
   Calendar,
+  ArrowRight,
 } from '@element-plus/icons-vue';
 import { getCandidatesListService, archiveCandidateService } from '@/api/candidate';
 import { useSystemStore } from '@/stores';
@@ -19,7 +20,7 @@ import InterviewDialog from './components/InterviewDialog.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 
-const isMobile = computed(() => window.innerWidth <= 768);
+const isMobile = computed(() => window.innerWidth <= 1024);
 const route = useRoute();
 const router = useRouter();
 const systemStore = useSystemStore();
@@ -388,14 +389,8 @@ const handleArchive = async (row) => {
   justify-content: flex-end;
 }
 
-/* 手機端優化 */
-@media (max-width: 768px) {
-  .candidate-management {
-    padding: 2px;
-  }
-  .filter-card :deep(.el-card__body) {
-    padding: 15px !important;
-  }
+/* 平板和手機共用樣式 */
+@media (max-width: 1024px) {
   .desktop-only {
     display: none;
   }
@@ -403,16 +398,6 @@ const handleArchive = async (row) => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     margin-bottom: 0px;
-  }
-  .filter-grid :deep(.el-form-item) {
-    margin-right: 10px !important;
-  }
-  .filter-form :deep(.el-form-item) {
-    margin-bottom: 8px !important;
-  }
-  .item-keyword {
-    width: 100% !important;
-    margin-right: 0 !important;
   }
   .item-btns {
     width: 100%;
@@ -424,12 +409,8 @@ const handleArchive = async (row) => {
   .item-btns .el-button {
     flex: 1;
   }
-  .btn-add-full {
-    margin-top: 10px;
-    width: 100%;
-  }
 
-  /* 手機卡片與變色條 */
+  /* 卡片區域 */
   .m-card {
     background-color: var(--el-bg-color-overlay);
     border: 1px solid var(--el-border-color-lighter);
@@ -454,7 +435,6 @@ const handleArchive = async (row) => {
   .m-status-rejected {
     border-left-color: var(--el-color-danger);
   }
-
   .m-card-header {
     padding: 12px;
     display: flex;
@@ -481,7 +461,6 @@ const handleArchive = async (row) => {
   .m-arrow.is-rotated {
     transform: rotate(90deg);
   }
-
   .m-card-content {
     padding: 0 12px 12px;
     border-top: 1px solid var(--el-border-color-extra-light);
@@ -506,9 +485,98 @@ const handleArchive = async (row) => {
   }
 }
 
-@media (min-width: 769px) {
+/* 平板端優化 */
+@media (min-width: 760px) and (max-width: 1024px) {
+  .candidate-management {
+    padding: 5px;
+  }
+  .item-keyword {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  .btn-add-full {
+    margin-top: 0 !important;
+  }
+  /* 平板卡片 */
+  .mobile-list-container {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* 手機端優化 */
+@media (max-width: 759px) {
+  .candidate-management {
+    padding: 2px;
+  }
+  .filter-card :deep(.el-card__body) {
+    padding: 15px !important;
+  }
+  .filter-grid :deep(.el-form-item) {
+    margin-right: 10px !important;
+  }
+  .filter-form :deep(.el-form-item) {
+    margin-bottom: 8px !important;
+  }
+  .item-keyword {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  .btn-add-full {
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  /* 手機卡片 */
+  .mobile-list-container {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 桌面端優化 */
+@media (min-width: 1025px) {
   .mobile-only {
     display: none;
+  }
+
+  .responsive-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .item-keyword {
+    width: 220px;
+    margin-right: 0px !important;
+  }
+  .filter-grid {
+    display: flex;
+    gap: 10px;
+  }
+  .filter-grid :deep(.el-form-item) {
+    margin-right: 0;
+  }
+  .filter-grid :deep(.el-select) {
+    width: 160px;
+  }
+  .item-btns {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  /* 表格內容置中 */
+  .table-card.desktop-only .el-table .el-table__cell {
+    text-align: center !important;
+  }
+  .table-card.desktop-only :deep(.el-table .cell) {
+    text-align: center !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .table-card.desktop-only :deep(.el-table th.el-table__cell) {
+    text-align: center !important;
   }
 }
 </style>

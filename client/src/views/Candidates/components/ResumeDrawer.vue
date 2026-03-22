@@ -1,6 +1,23 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { baseURL } from '@/utils/request';
+
+// 動態計算抽屜寬度
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+window.addEventListener('resize', handleResize);
+const isMobile = computed(() => windowWidth.value <= 480);
+const isTablet = computed(() => windowWidth.value <= 1024);
+const drawerSize = computed(() => {
+  if (isMobile.value) return '90%';
+  if (isTablet.value) return '80%';
+  return '50%';
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 
 const props = defineProps({
   modelValue: Boolean,
@@ -45,7 +62,7 @@ const handleClose = () => {
     :model-value="modelValue"
     @update:model-value="handleClose"
     title="履歷預覽"
-    size="50%"
+    :size="drawerSize"
     destroy-on-close
   >
     <div v-if="url" class="resume-container">
@@ -72,6 +89,9 @@ const handleClose = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* 針對IOS優化 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .no-preview {

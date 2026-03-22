@@ -1,10 +1,27 @@
 <script setup>
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, watch, computed, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useBookingStore, useSystemStore } from '@/stores';
 import { createInterviewService, updateInterviewService } from '@/api/interview';
 import { getCandidateInfoService } from '@/api/candidate';
 import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time';
+
+// 動態計算彈窗寬度
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+window.addEventListener('resize', handleResize);
+const isMobile = computed(() => windowWidth.value <= 480);
+const isTablet = computed(() => windowWidth.value <= 1024);
+const dialogSize = computed(() => {
+  if (isMobile.value) return '80%';
+  if (isTablet.value) return '60%';
+  return '35%';
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 
 const props = defineProps({
   modelValue: Boolean,
@@ -179,19 +196,43 @@ async function onSubmit() {
 </script>
 
 <template>
-  <el-dialog :model-value="modelValue" :title="isEdit ? '編輯面試行程' : '安排新面試'" width="560px" @close="handleClose"
-    top="10vh">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" status-icon>
+  <el-dialog
+    :model-value="modelValue"
+    :title="isEdit ? '編輯面試行程' : '安排新面試'"
+    :width="dialogSize"
+    @close="handleClose"
+    top="10vh"
+  >
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      :label-width="isMobile ? '90px' : '100px'"
+      status-icon
+    >
       <el-form-item label="應徵者">
-        <el-input :model-value="isEdit ? (form.title.split('：')[1]?.split(' - ')[0]) : candidate?.name" disabled />
+        <el-input
+          :model-value="isEdit ? form.title.split('：')[1]?.split(' - ')[0] : candidate?.name"
+          disabled
+        />
       </el-form-item>
 
       <el-form-item label="面試官" prop="interviewer_id">
-        <el-select v-model="form.interviewer_id" placeholder="請選擇面試官" style="width: 100%" filterable>
-          <el-option v-for="item in displayInterviewers" :key="item.value" :label="item.label" :value="item.value">
+        <el-select
+          v-model="form.interviewer_id"
+          placeholder="請選擇面試官"
+          style="width: 100%"
+          filterable
+        >
+          <el-option
+            v-for="item in displayInterviewers"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          >
             <span style="float: left">{{ item.label }}</span>
             <span style="float: right; color: #8492a6; font-size: 13px">
-              {{systemStore.departments.find((d) => d.id === item.dept_id)?.name}}
+              {{ systemStore.departments.find((d) => d.id === item.dept_id)?.name }}
             </span>
           </el-option>
         </el-select>
@@ -200,16 +241,29 @@ async function onSubmit() {
           已自動篩選「{{
             systemStore.departments.find((d) => d.id === form.dept_id)?.name
           }}」的面試官
-          <el-button type="primary" link @click="form.dept_id = ''" size="small">顯示全公司</el-button>
+          <el-button type="primary" link @click="form.dept_id = ''" size="small"
+            >顯示全公司</el-button
+          >
         </div>
       </el-form-item>
 
       <el-form-item label="面試日期" prop="date">
-        <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+        <el-date-picker
+          v-model="form.date"
+          type="date"
+          value-format="YYYY-MM-DD"
+          style="width: 100%"
+        />
       </el-form-item>
 
       <el-form-item label="開始時間" prop="startTime">
-        <el-time-select v-model="form.startTime" start="08:00" step="00:30" end="20:00" style="width: 100%" />
+        <el-time-select
+          v-model="form.startTime"
+          start="08:00"
+          step="00:30"
+          end="20:00"
+          style="width: 100%"
+        />
       </el-form-item>
 
       <el-form-item label="面試時長" prop="durationMin">
@@ -328,5 +382,10 @@ async function onSubmit() {
   font-size: 11px;
   color: #e6a23c;
   line-height: 1.4;
+}
+
+:deep(.el-form-item__label) {
+  justify-content: flex-end !important;
+  padding-bottom: 4px !important;
 }
 </style>
