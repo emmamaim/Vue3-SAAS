@@ -1,86 +1,87 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useTasksStore } from '@/stores'
-import TaskDialog from '@/views/Tasks/components/TaskDialog.vue'
-import { useTaskDnD } from '@/views/Tasks/composables/useTaskDnD'
+import { ref, computed, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useTasksStore } from '@/stores';
+import TaskDialog from '@/views/Tasks/components/TaskDialog.vue';
+import { useTaskDnD } from '@/views/Tasks/composables/useTaskDnD';
+import { Edit, RefreshLeft } from '@element-plus/icons-vue';
 
-const tasksStore = useTasksStore()
+const tasksStore = useTasksStore();
 
 // 拖拽邏輯物件 dnd (Drag and Drop)
-const dnd = useTaskDnD()
+const dnd = useTaskDnD();
 
 // 初始化載入
 onMounted(async () => {
-  await tasksStore.fetchAll()
-})
+  await tasksStore.fetchAll();
+});
 
 // Computed 過濾器 => 任務狀態
-const todo = computed(() => tasksStore.byStatus('todo'))
-const done = computed(() => tasksStore.byStatus('done'))
+const todo = computed(() => tasksStore.byStatus('todo'));
+const done = computed(() => tasksStore.byStatus('done'));
 
 // 拖拽放置 dnd
 async function onDropTo(status) {
   // 先獲取被拖拽卡片的id
-  const id = dnd.draggingId.value
-  if (!id) return
+  const id = dnd.draggingId.value;
+  if (!id) return;
   // 尋找該任務
-  const task = tasksStore.items.find((t) => t.id === id)
+  const task = tasksStore.items.find((t) => t.id === id);
   // 防呆：任務不存在或放下位置與原來位置一樣 => 結束
   if (!task || task.status === status) {
-    dnd.onDragEnd()
-    return
+    dnd.onDragEnd();
+    return;
   }
   // 更新store
   try {
-    await tasksStore.updateStatus(id, status)
-    ElMessage.success('更新成功')
+    await tasksStore.updateStatus(id, status);
+    ElMessage.success('更新成功');
   } catch {
-    ElMessage.error('更新失敗')
+    ElMessage.error('更新失敗');
   } finally {
-    dnd.onDragEnd()
+    dnd.onDragEnd();
   }
 }
 
 // 移動（更新）任務
 async function move(id, status) {
   try {
-    await tasksStore.updateStatus(id, status)
-    ElMessage.success('已更新')
+    await tasksStore.updateStatus(id, status);
+    ElMessage.success('已更新');
   } catch {
-    ElMessage.error('移動失敗')
+    ElMessage.error('移動失敗');
   }
 }
 
 // 彈窗控制
-const dialogOpen = ref(false)
-const dialogInitial = ref(null)
-const dialogSaving = ref(false)
+const dialogOpen = ref(false);
+const dialogInitial = ref(null);
+const dialogSaving = ref(false);
 
 // 打開彈窗
 function openEdit(task) {
-  dialogInitial.value = task
-  dialogOpen.value = true
+  dialogInitial.value = task;
+  dialogOpen.value = true;
 }
 
 // 關閉彈窗
 function closeDialog() {
-  dialogOpen.value = false
-  dialogInitial.value = null
+  dialogOpen.value = false;
+  dialogInitial.value = null;
 }
 
 // 提交
 async function handleSubmit(payload) {
   if (!dialogInitial.value?.id) return;
-  dialogSaving.value = true
+  dialogSaving.value = true;
   try {
-    await tasksStore.submitInterviewResult(dialogInitial.value.id, payload)
-    ElMessage.success('面試評價已提交')
-    closeDialog()
+    await tasksStore.submitInterviewResult(dialogInitial.value.id, payload);
+    ElMessage.success('面試評價已提交');
+    closeDialog();
   } catch (e) {
-    ElMessage.error('提交失敗：' + (e.message || '未知錯誤'))
+    ElMessage.error('提交失敗：' + (e.message || '未知錯誤'));
   } finally {
-    dialogSaving.value = false
+    dialogSaving.value = false;
   }
 }
 </script>
@@ -114,26 +115,39 @@ async function handleSubmit(payload) {
     4.@dragend (拖拽結束)：重置相關狀態
     stop 阻止冒泡，防止卡片的拖拽信號傳遞給父層或其他嵌套元素，避免觸發多重 DND 邏輯 -->
 
-    <el-row :gutter="16">
+    <el-row :gutter="16" class="kanban-row">
       <!-- todo -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12" class="kanban-col">
         <el-card>
           <h4>待辦</h4>
           <!-- 核心區：拖放容器 -->
-          <div class="dropzone" :class="{ 'dropzone--over': dnd.overStatus.value === 'todo' }"
-            @dragenter.capture.prevent="dnd.onDragOver('todo')" @dragover.capture.prevent="dnd.onDragOver('todo')"
-            @dragleave.capture="dnd.onDragLeave('todo')" @drop.capture.prevent="onDropTo('todo')">
+          <div
+            class="dropzone"
+            :class="{ 'dropzone--over': dnd.overStatus.value === 'todo' }"
+            @dragenter.capture.prevent="dnd.onDragOver('todo')"
+            @dragover.capture.prevent="dnd.onDragOver('todo')"
+            @dragleave.capture="dnd.onDragLeave('todo')"
+            @drop.capture.prevent="onDropTo('todo')"
+          >
             <el-empty v-if="todo.length === 0" description="尚無任務資料" />
             <el-space direction="vertical" fill style="width: 100%">
               <!-- 任務卡片 -->
-              <el-card v-for="t in todo" :key="t.id" shadow="never" class="task-card" @click="openEdit(t)"
-                :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }" draggable="true"
-                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)" @dragend="dnd.onDragEnd">
+              <el-card
+                v-for="t in todo"
+                :key="t.id"
+                shadow="never"
+                class="task-card"
+                @click="openEdit(t)"
+                :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }"
+                draggable="true"
+                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)"
+                @dragend="dnd.onDragEnd"
+              >
                 <!-- 任務容器 -->
                 <div class="tasksContainer">
                   <!-- 任務內容 -->
                   <div>
-                    <div style="font-weight: 600">
+                    <div class="task-title">
                       {{ t.title }}
                     </div>
                     <small> {{ t.priority }} . {{ t.dueDate?.slice(0, 10) || 'no due' }} </small>
@@ -142,7 +156,7 @@ async function handleSubmit(payload) {
                   <div @click.stop>
                     <!-- 防止點擊選單時觸發卡片的openEdit -->
                     <el-dropdown trigger="click">
-                      <el-button size="small" icon="MoreFilled" circle />
+                      <el-button size="default" :icon="Edit" circle />
                       <template #dropdown>
                         <el-dropdown-menu>
                           <el-dropdown-item @click="openEdit(t)">填寫評價</el-dropdown-item>
@@ -159,24 +173,37 @@ async function handleSubmit(payload) {
       </el-col>
 
       <!-- done -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12" class="kanban-col">
         <el-card>
           <h4>已完成</h4>
           <!-- 核心區：拖放容器 -->
-          <div class="dropzone" :class="{ 'dropzone--over': dnd.overStatus.value === 'done' }"
-            @dragenter.capture.prevent="dnd.onDragOver('done')" @dragover.capture.prevent="dnd.onDragOver('done')"
-            @dragleave.capture="dnd.onDragLeave('done')" @drop.capture.prevent="onDropTo('done')">
+          <div
+            class="dropzone"
+            :class="{ 'dropzone--over': dnd.overStatus.value === 'done' }"
+            @dragenter.capture.prevent="dnd.onDragOver('done')"
+            @dragover.capture.prevent="dnd.onDragOver('done')"
+            @dragleave.capture="dnd.onDragLeave('done')"
+            @drop.capture.prevent="onDropTo('done')"
+          >
             <el-empty v-if="done.length === 0" description="尚無任務資料" />
             <el-space direction="vertical" fill style="width: 100%">
               <!-- 任務卡片 -->
-              <el-card v-for="t in done" :key="t.id" shadow="never" class="task-card" @click="openEdit(t)"
-                :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }" draggable="true"
-                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)" @dragend="dnd.onDragEnd">
+              <el-card
+                v-for="t in done"
+                :key="t.id"
+                shadow="never"
+                class="task-card"
+                @click="openEdit(t)"
+                :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }"
+                draggable="true"
+                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)"
+                @dragend="dnd.onDragEnd"
+              >
                 <!-- 任務容器 -->
                 <div class="tasksContainer">
                   <!-- 任務內容 -->
                   <div>
-                    <div style="font-weight: 600">
+                    <div class="task-title">
                       {{ t.title }}
                     </div>
                     <small> {{ t.priority }} . {{ t.dueDate?.slice(0, 10) || 'no due' }} </small>
@@ -184,14 +211,12 @@ async function handleSubmit(payload) {
                   <!-- 任務下拉菜單：編輯/移動/刪除 -->
                   <div @click.stop>
                     <!-- 防止點擊選單時觸發卡片的openEdit -->
-                    <el-dropdown trigger="click">
-                      <el-button size="small" icon="MoreFilled" circle />
-                      <template #dropdown>
-                        <el-dropdown-menu>
-                          <el-dropdown-item @click="move(t.id, 'todo')">重置任務</el-dropdown-item>
-                        </el-dropdown-menu>
-                      </template>
-                    </el-dropdown>
+                    <el-button
+                      :icon="RefreshLeft"
+                      circle
+                      class="custom-action-btn reset-btn"
+                      @click="move(t.id, 'todo')"
+                    />
                   </div>
                 </div>
               </el-card>
@@ -202,8 +227,13 @@ async function handleSubmit(payload) {
     </el-row>
 
     <!-- TaskDialog 任務彈窗 -->
-    <TaskDialog :open="dialogOpen" :initial="dialogInitial" :saving="dialogSaving" @cancel="closeDialog"
-      @submit="handleSubmit" />
+    <TaskDialog
+      :open="dialogOpen"
+      :initial="dialogInitial"
+      :saving="dialogSaving"
+      @cancel="closeDialog"
+      @submit="handleSubmit"
+    />
   </div>
 </template>
 
@@ -217,18 +247,25 @@ async function handleSubmit(payload) {
 
 .header h3 {
   margin: 0;
+  color: var(--el-text-color-primary);
 }
 
-/* 任務容器 */
 .tasksContainer {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
 
+.task-title {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  line-height: 1.4;
+}
+
 /* 任務卡片狀態管理 */
 .task-card {
-  border: 1px solid var(--el-border-color);
+  border: 1px solid var(--el-border-color-light);
+  background-color: var(--el-bg-color-overlay);
   /* 滑鼠提示可移動的狀態 */
   cursor: grab;
   transition:
@@ -259,6 +296,29 @@ async function handleSubmit(payload) {
 .dropzone--over {
   /* outline顯示虛線：模擬可放置的感覺（不會佔用空間）*/
   outline: 2px dashed var(--el-color-primary);
-  background: rgba(64, 158, 255, 0.08);
+  background: var(--el-color-primary-light-9);
+}
+
+/* 手機端優化 */
+@media (max-width: 500px) {
+  .kanban-col {
+    margin-bottom: 10px;
+  }
+  :deep(.el-card__body) {
+    padding: 10px;
+  }
+  .task-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .tasksContainer :deep(.el-button) {
+    background-color: var(--el-color-primary-light-9) !important;
+    border: 1px solid var(--el-color-primary-light-7) !important;
+    color: var(--el-color-primary) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .tasksContainer :deep(.el-button .el-icon) {
+    font-size: 20px;
+  }
 }
 </style>

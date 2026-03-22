@@ -113,3 +113,9 @@
     padding: 0;
   }
 }
+/* 極小屏幕適配 */
+@media (max-width: 400px) {
+  :deep(.el-timeline) {
+    padding-left: 10px;
+  }
+}

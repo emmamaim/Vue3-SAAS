@@ -11,7 +11,7 @@ window.addEventListener('resize', handleResize);
 const isMobile = computed(() => windowWidth.value <= 480);
 const isTablet = computed(() => windowWidth.value <= 1024);
 const drawerSize = computed(() => {
-  if (isMobile.value) return '90%';
+  if (isMobile.value) return '100%';
   if (isTablet.value) return '80%';
   return '50%';
 });

@@ -1,12 +1,28 @@
 <script setup>
-import { computed, ref, reactive, watch } from 'vue'
-// 接收父組件TasksPage傳來的props
+import { computed, ref, reactive, watch, onUnmounted } from 'vue'
+
+// 動態計算彈窗寬度
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+window.addEventListener('resize', handleResize);
+const isMobile = computed(() => windowWidth.value <= 480);
+const isTablet = computed(() => windowWidth.value <= 1024);
+const dialogSize = computed(() => {
+  if (isMobile.value) return '90%';
+  if (isTablet.value) return '60%';
+  return '35%';
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
 const props = defineProps({
   open: { type: Boolean, default: false },
   initial: { type: Object, default: null },
   saving: { type: Boolean, default: false },
 })
-// emit通知父組件 取消 / 儲存
 const emit = defineEmits(['cancel', 'submit'])
 
 // 表單
@@ -55,7 +71,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <el-dialog :model-value="open" title="提交面試評價" width="480px" @close="onCancel" :close-on-click-modal="false"
+  <el-dialog :model-value="open" title="提交面試評價" :width="dialogSize" @close="onCancel" :close-on-click-modal="false"
     append-to-body>
     <div v-if="initial" class="task-info">
       <div class="info-item">

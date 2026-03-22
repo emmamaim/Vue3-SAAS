@@ -131,7 +131,7 @@ onMounted(fetchData)
               description="暫無未來行程" 
               :image-size="60" 
             />
-            <el-timeline v-else>
+            <el-timeline v-else class="db-timeline">
               <el-timeline-item 
                 v-for="b in bookingStore.upcoming" 
                 :key="b.id"

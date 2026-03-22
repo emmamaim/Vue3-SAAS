@@ -1,7 +1,24 @@
 <script setup>
-import { reactive, ref, watch, computed } from 'vue'
+import { reactive, ref, watch, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time'
+
+// 動態計算彈窗寬度
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+window.addEventListener('resize', handleResize);
+const isMobile = computed(() => windowWidth.value <= 480);
+const isTablet = computed(() => windowWidth.value <= 1024);
+const dialogSize = computed(() => {
+  if (isMobile.value) return '90%';
+  if (isTablet.value) return '60%';
+  return '35%';
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -106,7 +123,7 @@ function onCancel() { emit('cancel') }
 </script>
 
 <template>
-  <el-dialog :model-value="open" :title="isLocked ? '檢視面試行程 (唯讀)' : (mode === 'create' ? '新增行程' : '編輯行程')" width="480px"
+  <el-dialog :model-value="open" :title="isLocked ? '檢視面試行程 (唯讀)' : (mode === 'create' ? '新增行程' : '編輯行程')" :width="dialogSize"
     @close="onCancel" destroy-on-close>
     <el-alert v-if="isLocked" title="此為系統同步的面試行程，無法在此直接修改。如需調整請聯繫 HR 或至面試管理模組。" type="warning" show-icon
       :closable="false" style="margin-bottom: 18px" />

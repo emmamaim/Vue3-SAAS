@@ -140,7 +140,7 @@ onMounted(fetchData);
               description="暫無待進行面試"
               :image-size="60"
             />
-            <el-timeline v-else>
+            <el-timeline v-else class="db-timeline">
               <el-timeline-item
                 v-for="(item, index) in dashboardData.upcoming"
                 :key="index"
