@@ -23,14 +23,18 @@ const systemStore = useSystemStore();
 const isStaff = computed(
   () => userStore.userInfo.role === 'super_admin' || userStore.userInfo.role === 'dept_hr',
 );
+
 // 使用者ID
 const myUserId = computed(() => userStore.userInfo.id);
+
 // 選中的面試官ID
 const selectedInterviewerId = ref(isStaff.value ? null : myUserId.value);
+
 // 獲取面試官列表 => 篩選
 const otherInterviewerOptions = computed(() => {
   return (systemStore.interviewerOptions || []).filter((opt) => opt.value !== myUserId.value);
 });
+
 // 顯示：新增/編輯行程彈窗按鈕
 const isMyOwnSchedule = computed(() => {
   if (isStaff.value) return false;
@@ -91,6 +95,17 @@ const hasBookings = (day) => {
 // 選中日期的行程列表
 const dayBookings = computed(() => bookingsByDate.value.get(selectedDate.value) ?? []);
 
+// 點擊返回今天
+const calendarDate = ref(new Date());
+watch(calendarDate, (newVal) => {
+  if (newVal) {
+    const y = newVal.getFullYear();
+    const m = String(newVal.getMonth() + 1).padStart(2, '0');
+    const d = String(newVal.getDate()).padStart(2, '0');
+    selectedDate.value = `${y}-${m}-${d}`;
+  }
+});
+
 // 彈窗相關
 const dialogOpen = ref(false);
 const dialogMode = ref('create');
@@ -118,6 +133,7 @@ function openCreate(prefill = {}) {
   conflictMsg.value = '';
   dialogOpen.value = true;
 }
+
 // 編輯行程
 function openEdit(row) {
   if (!isMyOwnSchedule.value) {
@@ -214,7 +230,7 @@ function openDayDetails(day) {
         </div>
       </div>
       <!-- 月曆 -->
-      <el-calendar class="booking-calendar">
+      <el-calendar v-model="calendarDate" class="booking-calendar">
         <!-- 用插槽自定義日期單元格內容 -->
         <template #date-cell="{ data }">
           <!-- 日期單元格的外框 .cal-cell -->
@@ -304,7 +320,11 @@ function openDayDetails(day) {
             <div class="title">
               {{ b.title }}
             </div>
-            <div class="meta" v-if="b.relatedTaskId" style="color: var(--el-color-danger); font-size: 12px">
+            <div
+              class="meta"
+              v-if="b.relatedTaskId"
+              style="color: var(--el-color-danger); font-size: 12px"
+            >
               * 此行程由系統面試安排產生，不可在此刪除
             </div>
           </div>

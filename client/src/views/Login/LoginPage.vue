@@ -21,8 +21,8 @@ const rules = {
     { required: true, message: '請輸入用戶名', trigger: 'blur' },
     {
       min: 3,
-      max: 10,
-      message: '用戶名必須是3-10位的字符',
+      max: 20,
+      message: '用戶名必須是3-20位的字符',
       trigger: 'blur',
     },
   ],

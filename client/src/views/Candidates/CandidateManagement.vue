@@ -123,7 +123,7 @@ onMounted(async () => {
     await systemStore.fetchAllOptions();
     // 儀表板參數跳轉
     if (route.query.hrId) {
-      queryParams.hr_id = Number(route.query.hrId);
+      queryParams.hr_id = route.query.hrId;
     }
     getCandidatesList();
   } catch (error) {
