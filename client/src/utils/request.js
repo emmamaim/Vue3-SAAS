@@ -2,7 +2,14 @@ import axios from 'axios';
 import router from '@/router';
 import { ElMessage } from 'element-plus';
 
+
+// 開發環境
+const isDev = import.meta.env.MODE === 'development';
+
 const baseURL = '/api';
+
+// 檔案專用
+const fileHost = isDev ? 'http://168.138.210.30:3000' : '';
 
 // 建立 axios實例
 const service = axios.create({
@@ -47,4 +54,4 @@ service.interceptors.response.use(
 );
 
 export default service;
-export { baseURL };
+export { baseURL, fileHost };

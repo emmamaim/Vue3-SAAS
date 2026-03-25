@@ -10,7 +10,7 @@ const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
 };
-window.addEventListener('resize',handleResize);
+window.addEventListener('resize', handleResize);
 const isMobile = computed(() => windowWidth.value <= 480);
 const isTablet = computed(() => windowWidth.value <= 1024);
 const drawerSize = computed(() => {
@@ -80,9 +80,9 @@ const resetForm = () => {
     name: '',
     email: '',
     phone: '',
-    job_id: '',
+    job_id: null,
     dept_id: null,
-    source_id: '',
+    source_id: null,
     status: 'pending',
     hr_id: null,
     resume: null,
@@ -106,7 +106,9 @@ watch(
       isEdit.value = true;
       form.value = {
         ...props.data,
-        job_id: props.data.job_id ? Number(props.data.job_id) : '',
+        job_id: props.data.job_id ? Number(props.data.job_id) : null,
+        dept_id: props.data.dept_id ? Number(props.data.dept_id) : null,
+        source_id: props.data.source_id ? Number(props.data.source_id) : null,
         resume: null,
       };
     } else if (val) {
@@ -191,8 +193,8 @@ const submitForm = async () => {
               <el-option
                 v-for="item in jobOptions"
                 :key="item.id"
-                :label="item.job_name"
-                :value="Number(item.id)"
+                :label="item.name"
+                :value="item.id"
               />
             </el-select>
           </el-form-item>

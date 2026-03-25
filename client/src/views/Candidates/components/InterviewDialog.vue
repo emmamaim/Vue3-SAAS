@@ -33,8 +33,9 @@ const emit = defineEmits(['update:modelValue', 'refresh']);
 const bookingStore = useBookingStore();
 const systemStore = useSystemStore();
 // 根據部門動態過濾面試官
+const filterDeptId = ref('');
 const displayInterviewers = computed(() => {
-  return systemStore.getInterviewerByDept(form.dept_id);
+  return systemStore.getInterviewerByDept(filterDeptId.value);
 });
 // --- 附加功能旗標 ---
 const adjustedOnce = ref(false);
@@ -83,6 +84,7 @@ watch(
       form.id = '';
       form.candidate_id = props.candidate.id;
       form.dept_id = props.candidate.dept_id;
+      filterDeptId.value = props.candidate.dept_id;
       // 計算面試輪次
       try {
         const res = await getCandidateInfoService(props.candidate.id);
@@ -144,6 +146,13 @@ async function onSubmit() {
   } catch {
     return;
   }
+  loading.value = true;
+  try {
+    await bookingStore.fetchAll({ userId: form.interviewer_id });
+  } catch {
+    loading.value = false;
+    return ElMessage.error('無法取得面試官最新行程，請稍後再試');
+  }
   // 2. 取得面試官當天行程
   const blocks = bookingStore.items
     .filter((b) => b.date?.slice(0, 10) === form.date)
@@ -158,28 +167,38 @@ async function onSubmit() {
       // 第一次衝突 => 自動搜尋下一個可用空檔
       const next = findNextAvailableSlot(sMin, form.durationMin, blocks);
       if (!next) {
+        loading.value = false;
         ElMessage.error('該面試官今日已無足夠空檔，請改選日期');
         return;
       }
       form.startTime = toHHmm(next.s);
       form.endTime = toHHmm(next.e);
       adjustedOnce.value = true;
+      loading.value = false;
       ElMessage.warning(
         `時段衝突！已為您自動導航至下一個可用空檔: ${form.startTime}-${form.endTime}`,
       );
       //中斷 => 管理員/HR確認一次
       return;
     }
+    loading.value = false;
     return ElMessage.error('仍與現有行程衝突，請手動調整');
   }
   // 4. 執行三表聯動
-  loading.value = true;
   try {
+    const submitData = {
+      ...form,
+      dept_id: Number(form.dept_id || props.candidate?.dept_id),
+    };
+    if (!submitData.dept_id) {
+      loading.value = false;
+      return ElMessage.error('資料異常：找不到應徵者的部門 ID');
+    }
     if (isEdit.value) {
-      await updateInterviewService(form.id, form);
+      await updateInterviewService(form.id, submitData);
       ElMessage.success('面試行程更新成功！');
     } else {
-      await createInterviewService(form);
+      await createInterviewService(submitData);
       ElMessage.success('面試安排成功！已同步至該面試官的行事曆與任務清單');
     }
     emit('refresh');
@@ -237,11 +256,11 @@ async function onSubmit() {
           </el-option>
         </el-select>
 
-        <div v-if="form.dept_id" style="font-size: 12px; color: #909399; line-height: 1">
+        <div v-if="filterDeptId" style="font-size: 12px; color: #909399; line-height: 1">
           已自動篩選「{{
-            systemStore.departments.find((d) => d.id === form.dept_id)?.name
+            systemStore.departments.find((d) => d.id === filterDeptId)?.name
           }}」的面試官
-          <el-button type="primary" link @click="form.dept_id = ''" size="small"
+          <el-button type="primary" link @click="filterDeptId = ''" size="small"
             >顯示全公司</el-button
           >
         </div>

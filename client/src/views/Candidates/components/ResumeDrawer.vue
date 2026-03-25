@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onUnmounted, ref } from 'vue';
-import { baseURL } from '@/utils/request';
+import { fileHost } from '@/utils/request';
 
 // 動態計算抽屜寬度
 const windowWidth = ref(window.innerWidth);
@@ -26,14 +26,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-// 移除末尾的/api
-const fileBaseUrl = baseURL.replace('/api', '');
-
 // 拼接完整的檔案路徑
 const fullUrl = computed(() => {
   if (!props.url) return '';
   // http 開頭則不拼接，否則拼接伺服器位址
-  return props.url.startsWith('http') ? props.url : `${fileBaseUrl}${props.url}`;
+  if (props.url.startsWith('http')) return props.url;
+  const path = props.url.startsWith('/') ? props.url : `/${props.url}`;
+  return `${fileHost}${path}`;
 });
 
 // 判斷PDF
