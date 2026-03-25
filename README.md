@@ -7,9 +7,9 @@
 ## 🌐 線上展示 (Demo)
 * **傳送門**：[https://talentflow-saas.com](https://talentflow-saas.com)
 * **測試帳號**（建議分別登入體驗權限差異）：
-  * **管理員**：`admin` / `123456`
-  * **HR 專員**：`emma` / `123456`
-  * **面試官**：`rose` / `123456`
+  * **管理員**：`adminTest1` / `123456`
+  * **HR 專員**：`hrTest1` / `123456`
+  * **面試官**：`interviewerTest1` / `123456`
 
 ---
 
