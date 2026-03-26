@@ -34,9 +34,14 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // 中間件設定：允許跨域攜帶 Cookie
+app.set('trust proxy', 1);
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: [
+      'https://talentflow-saas.com',
+      'https://www.talentflow-saas.com',
+      'http://localhost:5173'
+    ],
     credentials: true
   })
 );

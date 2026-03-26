@@ -30,10 +30,12 @@ export const login = async (req, res) => {
     res.cookie('token', token, {
       // 防止XSS攻擊
       httpOnly: true,
+      secure: true,
       // 生產環境https才啟用
-      secure: process.env.NODE_ENV === 'production',
+      // secure: process.env.NODE_ENV === 'production',
       // 現代瀏覽器防禦 CSRF 的建議設定
       sameSite: 'Lax',
+      path: '/',
       // 有效期24小時
       maxAge: 24 * 60 * 60 * 1000
     });
@@ -61,7 +63,8 @@ export const logout = (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     sameSite: 'Lax',
-    secure: process.env.NODE_ENV === 'production'
+    secure: true,
+    path: '/'
   });
   res.json({ success: true, message: '已安全登出' });
 };
