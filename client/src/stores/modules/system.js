@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { systemInitService } from '@/api/system';
 import { getHrListService, getInterviewerListService } from '@/api/users';
+import { useUserStore } from './users';
 
 export const useSystemStore = defineStore('system', {
   state: () => ({
@@ -17,9 +18,10 @@ export const useSystemStore = defineStore('system', {
   actions: {
     // 初始化獲取所有選項
     async fetchAllOptions() {
-      if (this.isLoaded && this.jobs.length > 0 && this.hrList.length > 0) return;
-      const token = localStorage.getItem('token');
-      if (!token) {
+      const userStore = useUserStore();
+      if (this.isLoaded && this.jobs.length > 0) return;
+      // userStore 的登入狀態
+      if (!userStore.isLoggedIn) {
         console.warn('[System Store] 尚未登入，跳過資料預載');
         return;
       }

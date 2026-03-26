@@ -20,6 +20,7 @@ import {
 } from '@element-plus/icons-vue';
 // 引入 VueUse 的主題工具
 import { useDark, useToggle } from '@vueuse/core';
+import { ElMessageBox, ElMessage } from 'element-plus';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -55,9 +56,22 @@ const title = computed(() => {
 });
 
 // 登出
-const handleLogout = () => {
-  userStore.logout();
-  router.push('/login');
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('您確定要退出系統嗎？', '提示', {
+      confirmButtonText: '確定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    await userStore.logout();
+    ElMessage.success('已安全退出');
+    // 清除狀態後跳轉
+    router.push('/login');
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Logout failed:', error);
+    }
+  }
 };
 
 onMounted(() => {

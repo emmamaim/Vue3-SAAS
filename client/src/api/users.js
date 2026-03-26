@@ -1,14 +1,5 @@
 import request from '@/utils/request';
 
-// 用戶登入
-export const userLoginService = (data) => {
-  return request({
-    url: '/users/login',
-    method: 'post',
-    data,
-  });
-};
-
 // 獲取HR列表
 export const getHrListService = () => {
   return request({

@@ -68,25 +68,32 @@ const router = createRouter({
 });
 
 // 路由守衛
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
-  const hasToken = !!userStore.token;
-  const role = userStore.userInfo?.role;
-  const requiredRoles = to.meta.roles;
-  // 1.token不存在
-  if (to.meta.requiresAuth && !hasToken) {
+  const { isLoggedIn } = userStore;
+
+  if (to.path === '/login') {
+    // 已登入 => 回首頁
+    if (isLoggedIn) return next('/');
+    // 未登入去登入頁 => 放行
+    return next();
+  }
+  // 未登入 => 去其他頁面 => 回登入頁
+  if (!isLoggedIn) {
     return next('/login');
   }
-  // 2.token存在的情況下禁止回登入頁
-  else if (to.path === '/login' && hasToken) {
-    return next('/');
-  }
-  // 3.登入權限不足
-  else if (requiredRoles && !requiredRoles.includes(role)) {
-    ElMessage.warning('權限不足，已導回首頁');
-    return next('/dashboard');
-  } else {
+  // 3.確認cookie有效
+  try {
+    await userStore.getUserInfo();
+    const userRole = userStore.userInfo?.role;
+    const requiredRoles = to.meta.roles;
+    if (requiredRoles && !requiredRoles.includes(userRole)) {
+      ElMessage.warning('權限不足，已導回首頁');
+      return next('/dashboard');
+    }
     next();
+  } catch (error) {
+    next('/login');
   }
 });
 

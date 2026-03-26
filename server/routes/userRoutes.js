@@ -4,8 +4,6 @@ import * as userController from '../controllers/userController.js';
 import { auth, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-// 登入（無需認證）
-router.post('/login', userController.login);
 
 // 需登入認證
 router.get('/hr-list', auth, userController.getHrList);

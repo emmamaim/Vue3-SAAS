@@ -43,13 +43,7 @@ const login = async () => {
     await form.value.validate();
     await userStore.login(formModel.value);
     ElMessage.success('登入成功');
-    // 動態跳轉
-    const role = userStore.userInfo.role;
-    if (role === 'admin') {
-      router.push('/users');
-    } else {
-      router.push('/dashboard');
-    }
+    router.push('/dashboard');
   } catch {
     //攔截器處理錯誤信息
   }

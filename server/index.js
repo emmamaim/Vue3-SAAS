@@ -1,12 +1,9 @@
 import express from 'express';
-// 引入cors: 允許來自 Vue 前端的請求進入
 import cors from 'cors';
 import 'dotenv/config';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-
-// 引入中間件 (新增權限校驗)
 import {
   auth,
   isAdmin,
@@ -15,17 +12,15 @@ import {
 } from './middleware/authMiddleware.js';
 // 引入資料庫和路由
 import db from './config/db.js';
-
+import authRoutes from './routes/authRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import dashRoutes from './routes/dashboardRoutes.js';
-
 import userRoutes from './routes/userRoutes.js';
-
 import candidateRoutes from './routes/candidateRoutes.js';
 import interviewRoutes from './routes/interviewRoutes.js';
-
 import taskRoutes from './routes/taskRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -38,9 +33,16 @@ if (!fs.existsSync(uploadDir)) {
   console.log('已自動建立 uploads 資料夾');
 }
 
-// 中間件設定
-app.use(cors());
+// 中間件設定：允許跨域攜帶 Cookie
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
+
 // 增加解析 urlencoded 資料 (處理 form 提交)
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,7 +50,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 註冊路徑
-// 1. 公共/系統層/數據分析
+// 1. 公共登入登出/系統層/數據分析
+app.use('/api/auth', authRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/dashboard', dashRoutes);
 
