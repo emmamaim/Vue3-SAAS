@@ -119,6 +119,13 @@ watch(
 );
 // 處理檔案切換
 const handleFileChange = (file) => {
+  // 检查大小
+  const isLt5M = file.size / 1024 / 1024 < 5;
+  if (!isLt5M) {
+    ElMessage.error('上傳履歷大小不能超過 5MB!');
+    fileList.value = [];
+    return;
+  }
   form.value.resume = file.raw;
 };
 // 提交表單
@@ -271,12 +278,23 @@ const submitForm = async () => {
       <el-form-item label="履歷檔案 (PDF / Word)">
         <div v-if="isEdit && form.resume_url" style="margin-bottom: 10px">
           <el-tag closable @close="form.resume_url = ''">
-            當前已有檔案: {{ form.resume_url.split('/').pop() }}
+            當前已有檔案
           </el-tag>
         </div>
-        <el-upload action="#" :auto-upload="false" :limit="1" :on-change="handleFileChange" drag>
+        <el-upload
+          action="#"
+          :auto-upload="false"
+          :limit="1"
+          :on-change="handleFileChange"
+          :file-list="fileList"
+          accept=".pdf,.doc,.docx"
+          drag
+        >
           <el-icon class="el-icon--upload"><upload-filled /></el-icon>
           <div class="el-upload__text">拖拽或點擊上傳新履歷</div>
+          <template #tip>
+            <div class="el-upload__tip">請上傳 PDF/Word 檔案，大小不超過 5MB</div>
+          </template>
         </el-upload>
       </el-form-item>
     </el-form>

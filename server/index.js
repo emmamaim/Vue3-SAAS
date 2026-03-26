@@ -26,11 +26,11 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 初始化檢查：確保uploads資料夾存在
-const uploadDir = path.join(__dirname, 'uploads');
+// 初始化檢查：確保資料夾存在
+const uploadDir = path.join(__dirname, 'uploads', 'resumes');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-  console.log('已自動建立 uploads 資料夾');
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('已檢查並自動建立履歷上傳目錄: uploads/resumes');
 }
 
 // 中間件設定：允許跨域攜帶 Cookie
@@ -85,6 +85,18 @@ db.getConnection()
 // 2. 真正的錯誤處理中間件
 app.use((err, req, res, next) => {
   console.log('!!! 捕捉到後端錯誤 !!!');
+  // 針對 Multer 錯誤進行特殊處理
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: '檔案太大了，上限為 5MB' });
+    }
+    return res.status(400).json({ message: `上傳錯誤: ${err.message}` });
+  }
+  // 針對我們在 fileFilter 拋出的自定義錯誤
+  if (err.message === '檔案格式錯誤，僅支援 PDF 與 Word') {
+    return res.status(400).json({ message: err.message });
+  }
+
   console.error(err.stack);
   res.status(500).json({
     message: err.message || '系統發生錯誤',
