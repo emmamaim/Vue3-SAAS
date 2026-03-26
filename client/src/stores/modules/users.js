@@ -14,12 +14,16 @@ export const useUserStore = defineStore('users', {
     },
     // 登入
     async login(loginData) {
-      this.clearLocalData();
-      const res = await userLoginService(loginData);
-      this.userInfo = res.user;
-      // 持久化存儲
-      localStorage.setItem('userInfo', JSON.stringify(res.user));
-      return res;
+      try {
+        this.clearLocalData();
+        const res = await userLoginService(loginData);
+        this.userInfo = res.user;
+        // 持久化存儲
+        localStorage.setItem('userInfo', JSON.stringify(res.user));
+        return res;
+      } catch (error) {
+        throw error;
+      }
     },
     // 登出
     async logout() {

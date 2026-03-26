@@ -41,11 +41,16 @@ const login = async () => {
   if (!form.value) return;
   try {
     await form.value.validate();
+  } catch {
+    return;
+  }
+  try {
     await userStore.login(formModel.value);
     ElMessage.success('登入成功');
     router.push('/dashboard');
-  } catch {
-    //攔截器處理錯誤信息
+  } catch (error) {
+    const msg = error.response?.data?.message || '登入失敗，請檢查帳號密碼';
+    ElMessage.error(msg);
   }
 };
 </script>
