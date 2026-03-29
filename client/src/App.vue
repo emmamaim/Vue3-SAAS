@@ -1,20 +1,59 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import zhTw from 'element-plus/es/locale/lang/zh-tw.mjs'
-// 引入 Element Plus 的深色模式變數
 import 'element-plus/theme-chalk/dark/css-vars.css'
-// 初始化系統選項數據（部門、職位、來源等）
 import { onMounted } from 'vue';
 import { useSystemStore } from '@/stores';
+
 const systemStore = useSystemStore();
+
 onMounted(() => {
   systemStore.fetchAllOptions();
 });
 </script>
 
 <template>
-  <!-- 中文支持 -->
   <el-config-provider :locale="zhTw">
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <transition 
+        name="page-flow" 
+        mode="out-in"
+      >
+        <component :is="Component" :key="route.path" />
+      </transition>
+    </RouterView>
   </el-config-provider>
 </template>
+
+<style>
+/* --- TalentFlow 專屬流體過度動畫 --- */
+
+/* 進入前：輕微下沉並透明 */
+.page-flow-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* 離開後：向上飄走並透明 */
+.page-flow-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 過度中的動畫曲線 */
+.page-flow-enter-active,
+.page-flow-leave-active {
+  transition: 
+    opacity 0.3s ease, 
+    transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+body {
+  background-color: #ffffff;
+}
+
+#app {
+  overflow-x: hidden;
+  width: 100%;
+}
+</style>

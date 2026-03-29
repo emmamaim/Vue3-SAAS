@@ -2,20 +2,60 @@
 import { useUserStore } from '@/stores';
 import { User, Lock } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-// 建立store / router實例
 const userStore = useUserStore();
 const router = useRouter();
+const route = useRoute();
 const form = ref();
 
-// 表單數據對象
 const formModel = ref({
   username: '',
   password: '',
 });
-// 數據規則綁定
+
+// 登入按鈕呼吸動畫
+const isButtonBreathing = ref(false);
+// ✨ 新增：用來儲存定時器，以便銷毀
+let typingTimer = null;
+
+// 打字效果
+const typeEffect = (targetKey, fullText, delay = 100) => {
+  return new Promise((resolve) => {
+    let i = 0;
+    formModel.value[targetKey] = '';
+    typingTimer = setInterval(() => {
+      formModel.value[targetKey] += fullText[i];
+      i++;
+      if (i >= fullText.length) {
+        clearInterval(typingTimer);
+        resolve(); // 打字完成
+      }
+    }, delay);
+  });
+};
+
+onMounted(async () => {
+  const { autoUser, autoPass } = route.query;
+  if (autoUser && autoPass) {
+    ElMessage.info('正在為您準備測試環境...');
+
+    // 執行打字效果
+    await typeEffect('username', autoUser, 70);
+    await new Promise((r) => setTimeout(r, 300));
+    await typeEffect('password', autoPass, 70);
+
+    // 打字完成，激活按鈕呼吸特效
+    isButtonBreathing.value = true;
+    ElMessage.success('準備就緒，請登入');
+  }
+});
+
+onUnmounted(() => {
+  if (typingTimer) clearInterval(typingTimer);
+});
+
 const rules = {
   username: [
     { required: true, message: '請輸入用戶名', trigger: 'blur' },
@@ -36,7 +76,7 @@ const rules = {
   ],
 };
 
-// 登入 按鈕點擊 預校驗
+// 登入
 const login = async () => {
   if (!form.value) return;
   try {
@@ -47,7 +87,7 @@ const login = async () => {
   try {
     await userStore.login(formModel.value);
     ElMessage.success('登入成功');
-    router.push('/dashboard');
+    router.push('/admin/dashboard');
   } catch (error) {
     const msg = error.response?.data?.message || '登入失敗，請檢查帳號密碼';
     ElMessage.error(msg);
@@ -68,7 +108,7 @@ const login = async () => {
     <div class="form-section">
       <div class="login-card">
         <div class="mobile-logo-box">
-          <img src="@/assets/images/logo.png" alt="logo" />
+          <img src="@/assets/images/logo_login.png" alt="logo" />
         </div>
 
         <h2 class="form-title">歡迎登入</h2>
@@ -87,7 +127,14 @@ const login = async () => {
             />
           </el-form-item>
           <el-form-item>
-            <el-button class="login-btn" type="primary" @click="login"> 登入系統 </el-button>
+            <el-button
+              class="login-btn"
+              :class="{ 'btn-breath': isButtonBreathing }"
+              type="primary"
+              @click="login"
+            >
+              登入系統
+            </el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -169,10 +216,32 @@ const login = async () => {
   font-size: 16px;
   border-radius: 8px;
   margin-top: 12px;
+  transition: all 0.3s ease;
 }
 
 :deep(.el-input__wrapper) {
   border-radius: 8px;
+}
+
+/* 登入按鈕呼吸動畫 */
+@keyframes breath-animation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 15px 4px rgba(64, 158, 255, 0.4);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.0);
+    transform: scale(1);
+  }
+}
+
+.btn-breath {
+  animation: breath-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-color: #a0cfff !important;
 }
 
 /* 手機端優化 */
@@ -198,13 +267,14 @@ const login = async () => {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   }
   .mobile-logo-box {
-    display: block;
+    display: flex;
+    justify-content: center;
     text-align: center;
-    margin-bottom: 24px;
   }
   .mobile-logo-box img {
-    width: 180px;
+    width: 110px;
     height: auto;
+    margin-bottom: 20px;
   }
   .form-title {
     text-align: center;

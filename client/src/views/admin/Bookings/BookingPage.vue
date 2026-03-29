@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useBookingStore, useUserStore, useSystemStore } from '@/stores';
-import BookingDialog from '@/views/Bookings/components/BookingDialog.vue';
+import BookingDialog from '@/views/admin/Bookings/components/BookingDialog.vue';
 
 // 控制日曆顯示
 const windowWidth = ref(window.innerWidth);

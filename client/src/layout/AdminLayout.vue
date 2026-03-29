@@ -99,7 +99,7 @@ onUnmounted(() => {
         :collapse-transition="false"
         router
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item index="/admin/dashboard">
           <el-icon>
             <DataBoard />
           </el-icon>
@@ -107,7 +107,7 @@ onUnmounted(() => {
           <template #title>儀表板</template>
         </el-menu-item>
 
-        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/system">
+        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/admin/system">
           <el-icon>
             <Setting />
           </el-icon>
@@ -115,7 +115,7 @@ onUnmounted(() => {
           <template #title>系統配置</template>
         </el-menu-item>
 
-        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/users">
+        <el-menu-item v-if="userStore.userInfo?.role === 'super_admin'" index="/admin/users">
           <el-icon>
             <User />
           </el-icon>
@@ -125,7 +125,7 @@ onUnmounted(() => {
 
         <el-menu-item
           v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role)"
-          index="/candidates"
+          index="/admin/candidates"
         >
           <el-icon>
             <Avatar />
@@ -134,7 +134,7 @@ onUnmounted(() => {
           <template #title>應徵者管理</template>
         </el-menu-item>
 
-        <el-menu-item v-if="userStore.userInfo?.role === 'interviewer'" index="/tasks">
+        <el-menu-item v-if="userStore.userInfo?.role === 'interviewer'" index="/admin/tasks">
           <el-icon>
             <List />
           </el-icon>
@@ -144,7 +144,7 @@ onUnmounted(() => {
 
         <el-menu-item
           v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
-          index="/bookings"
+          index="/admin/bookings"
         >
           <el-icon>
             <Calendar />
