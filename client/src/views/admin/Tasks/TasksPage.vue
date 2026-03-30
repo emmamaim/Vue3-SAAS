@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useTasksStore } from '@/stores';
-import TaskDialog from '@/views/Tasks/components/TaskDialog.vue';
-import { useTaskDnD } from '@/views/Tasks/composables/useTaskDnD';
+import TaskDialog from '@/views/admin/Tasks/components/TaskDialog.vue';
+import { useTaskDnD } from '@/views/admin/Tasks/composables/useTaskDnD';
 import { Edit, RefreshLeft } from '@element-plus/icons-vue';
 
 const tasksStore = useTasksStore();

@@ -50,7 +50,7 @@ const formattedSourceData = computed(() => {
 
 // 路由跳轉
 const goToCandidates = () => {
-  router.push('/candidates');
+  router.push('/admin/candidates');
 };
 
 onMounted(fetchData);

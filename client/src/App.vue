@@ -1,11 +1,13 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import zhTw from 'element-plus/es/locale/lang/zh-tw.mjs'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import { onMounted } from 'vue';
 import { useSystemStore } from '@/stores';
+import HomeButton from '@/components/common/HomeButton.vue';
 
 const systemStore = useSystemStore();
+const route = useRoute();
 
 onMounted(() => {
   systemStore.fetchAllOptions();
@@ -14,12 +16,13 @@ onMounted(() => {
 
 <template>
   <el-config-provider :locale="zhTw">
-    <RouterView v-slot="{ Component, route }">
+    <HomeButton v-if="route.path !== '/'" />
+    <RouterView v-slot="{ Component, route: currentRoute }">
       <transition 
         name="page-flow" 
         mode="out-in"
       >
-        <component :is="Component" :key="route.path" />
+        <component :is="Component" :key="currentRoute.path" />
       </transition>
     </RouterView>
   </el-config-provider>

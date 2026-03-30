@@ -56,11 +56,11 @@ const isToday = (dateStr) => {
 }
 
 const goToBooking = () => {
-    router.push('/bookings')
+    router.push('/admin/bookings')
 }
 
 const goToTask = () => {
-    router.push('/tasks')
+    router.push('/admin/tasks')
 }
 
 onMounted(fetchData)

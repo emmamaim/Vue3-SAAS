@@ -87,7 +87,9 @@ const login = async () => {
   try {
     await userStore.login(formModel.value);
     ElMessage.success('登入成功');
-    router.push('/admin/dashboard');
+    setTimeout(() => {
+      router.push('/admin/dashboard');
+    }, 200);
   } catch (error) {
     const msg = error.response?.data?.message || '登入失敗，請檢查帳號密碼';
     ElMessage.error(msg);
@@ -234,7 +236,7 @@ const login = async () => {
     transform: scale(1.02);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.0);
+    box-shadow: 0 0 0 0 rgba(64, 158, 255, 0);
     transform: scale(1);
   }
 }

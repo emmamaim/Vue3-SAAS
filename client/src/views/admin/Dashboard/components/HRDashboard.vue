@@ -62,7 +62,7 @@ const isToday = (dateStr) => {
 // 參數跳轉
 const goToCandidates = () => {
   router.push({
-    path: '/candidates',
+    path: '/admin/candidates',
     query: {
       hrId: userStore.userInfo.id,
     },

@@ -52,8 +52,6 @@ const plans = [
     action: goToContact,
   },
 ];
-
-
 </script>
 
 <template>
@@ -89,69 +87,73 @@ const plans = [
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-center">
+      <div class="grid grid-cols-1 gap-12 md:px-12 lg:px-0 lg:grid-cols-3 lg:gap-8 lg:items-center">
         <Motion
           v-for="(plan, index) in plans"
           :key="index"
           :initial="{ opacity: 0, y: 30 }"
           :in-view="{ opacity: 1, y: 0 }"
           :transition="{ delay: index * 0.1, duration: 0.6 }"
-          class="relative flex flex-col rounded-3xl p-8 transition-all duration-300"
-          :class="[
-            plan.highlight
-              ? 'bg-gray-900 text-white shadow-2xl scale-105 z-10 border-4 border-blue-500/20'
-              : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-gray-200',
-          ]"
+          class="relative flex flex-col"
         >
           <div
-            v-if="plan.highlight"
-            class="absolute -top-5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-4 py-1 text-xs font-black uppercase tracking-widest"
-          >
-            最受歡迎
-          </div>
-
-          <div class="mb-8">
-            <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
-            <div class="flex items-baseline gap-1">
-              <span class="text-4xl font-black leading-none">
-                {{
-                  typeof plan.price === 'number'
-                    ? isYearly
-                      ? `NT$ ${Math.round(plan.price * 0.8)}`
-                      : `NT$ ${plan.price}`
-                    : plan.price
-                }}
-              </span>
-              <span v-if="typeof plan.price === 'number'" class="text-sm opacity-60">/ 月</span>
-            </div>
-            <p class="mt-4 text-sm opacity-70">{{ plan.desc }}</p>
-          </div>
-
-          <ul class="mb-10 flex-1 space-y-4">
-            <li
-              v-for="feature in plan.features"
-              :key="feature"
-              class="flex items-center gap-3 text-sm"
-            >
-              <span
-                class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20 text-blue-500 text-xs font-bold"
-                >✓</span
-              >
-              {{ feature }}
-            </li>
-          </ul>
-
-          <button
-            @click="plan.action()"
-            class="w-full rounded-2xl py-4 text-sm font-black transition-all active:scale-95"
+            class="relative flex flex-col h-full rounded-3xl p-8 transition-all duration-300"
             :class="[
               plan.highlight
-                ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/30'
-                : 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+                ? 'bg-gray-900 text-white shadow-2xl z-10 border-4 border-blue-500/20 lg:scale-110'
+                : 'bg-white text-gray-900 border border-gray-100 shadow-xl lg:hover:scale-105 lg:hover:shadow-gray-200',
             ]"
           >
-            {{ plan.button }}
-          </button>
+            <div
+              v-if="plan.highlight"
+              class="absolute -top-5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-4 py-1 text-xs font-black uppercase tracking-widest text-white"
+            >
+              最受歡迎
+            </div>
+
+            <div class="mb-8">
+              <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
+              <div class="flex items-baseline gap-1">
+                <span class="text-4xl font-black leading-none">
+                  {{
+                    typeof plan.price === 'number'
+                      ? isYearly
+                        ? `NT$ ${Math.round(plan.price * 0.8)}`
+                        : `NT$ ${plan.price}`
+                      : plan.price
+                  }}
+                </span>
+                <span v-if="typeof plan.price === 'number'" class="text-sm opacity-60">/ 月</span>
+              </div>
+              <p class="mt-4 text-sm opacity-70">{{ plan.desc }}</p>
+            </div>
+
+            <ul class="mb-10 flex-1 space-y-4">
+              <li
+                v-for="feature in plan.features"
+                :key="feature"
+                class="flex items-center gap-3 text-sm"
+              >
+                <span
+                  class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20 text-blue-500 text-xs font-bold"
+                  >✓</span
+                >
+                {{ feature }}
+              </li>
+            </ul>
+
+            <button
+              @click="plan.action()"
+              class="w-full rounded-2xl py-4 text-sm font-black transition-all active:scale-95"
+              :class="[
+                plan.highlight
+                  ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/30'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+              ]"
+            >
+              {{ plan.button }}
+            </button>
+          </div>
         </Motion>
       </div>
     </div>
