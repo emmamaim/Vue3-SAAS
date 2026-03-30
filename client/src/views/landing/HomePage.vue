@@ -49,7 +49,7 @@ const techStack = [
           <Motion
             :initial="{ opacity: 0, x: -40 }"
             :animate="{ opacity: 1, x: 0 }"
-            :transition="{ duration: 0.8 }"
+            :transition="{ duration: 0.8, delay: 0.2, easing: [0.16, 1, 0.3, 1] }"
             class="z-10"
           >
             <h1
@@ -61,7 +61,7 @@ const techStack = [
                 <Motion
                   :initial="{ scaleX: 0 }"
                   :animate="{ scaleX: 1 }"
-                  :transition="{ delay: 0.8, duration: 0.6 }"
+                  :transition="{ delay: 1, duration: 0.8, easing: 'ease-out' }"
                   class="absolute bottom-3 left-0 h-4 w-full origin-left bg-blue-100/60 -z-10 rounded-sm"
                 />
               </span>
@@ -178,6 +178,12 @@ async function archiveCandidate(id) {
 </template>
 
 <style scoped>
+h1 {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
 /* 背景光暈緩慢旋轉動畫 */
 @keyframes slowSpin {
   from {
