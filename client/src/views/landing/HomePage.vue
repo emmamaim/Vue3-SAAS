@@ -1,6 +1,8 @@
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { ref, type ComponentPublicInstance } from 'vue';
 import { Motion } from '@motionone/vue';
+import type { Feature, TechItem } from '@/types/landing';
+
 import PricingSection from '@/views/landing/components/PricingSection.vue';
 import FaqSection from '@/views/landing/components/FaqSection.vue';
 import ScrollShowcase from '@/views/landing/components/ScrollShowcase.vue';
@@ -13,7 +15,7 @@ import cardImg2 from '@/assets/images/card_img2.png';
 import cardImg3 from '@/assets/images/card_img3.png';
 
 // 體驗按鈕導航到測試賬號區塊
-const testAccountRef = ref(null);
+const testAccountRef = ref<ComponentPublicInstance | null>(null);
 const scrollToTest = () => {
   if (testAccountRef.value) {
     const element = testAccountRef.value.$el || testAccountRef.value;
@@ -23,13 +25,13 @@ const scrollToTest = () => {
   }
 };
 
-const features = [
+const features: Feature[] = [
   { title: '智能候選人 ATS', desc: '全自動化篩選簡歷，不再錯過優秀人才。', img: cardImg1 },
   { title: '面試自動排程', desc: '一鍵整合行事曆，免去確認時間。', img: cardImg2 },
   { title: '自動化工作流', desc: '自定義招聘階段，讓流程像流水般順暢。', img: cardImg3 },
 ];
 
-const techStack = [
+const techStack: TechItem[] = [
   { name: 'Vue 3', category: 'Frontend' },
   { name: 'Express.js', category: 'Backend' },
   { name: 'MongoDB', category: 'Database' },
@@ -82,7 +84,7 @@ const techStack = [
           <Motion
             :initial="{ opacity: 0, scale: 0.85, rotate: 5 }"
             :animate="{ opacity: 1, scale: 1, rotate: 0 }"
-            :transition="{ duration: 1.2, type: 'spring', damping: 15 }"
+            :transition="{ duration: 1.2, easing: [0.16, 1, 0.3, 1] }"
             class="relative z-10 flex justify-center"
           >
             <img :src="bgImg1" alt="Hero" class="w-full max-w-150 animate-ultra-float" />

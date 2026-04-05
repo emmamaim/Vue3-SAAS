@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue';
 import {
   Search,
@@ -13,6 +13,8 @@ import {
 } from '@element-plus/icons-vue';
 import { getCandidatesListService, archiveCandidateService } from '@/api/candidate';
 import { useSystemStore } from '@/stores';
+import type { Candidate, CandidateQuery, CandidateStatus } from '@/types';
+
 import CandidateDrawer from './components/CandidateDrawer.vue';
 import ResumeDrawer from './components/ResumeDrawer.vue';
 import CandidateInfoDialog from './components/CandidateInfoDialog.vue';
@@ -20,32 +22,26 @@ import InterviewDialog from './components/InterviewDialog.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 
-const isMobile = computed(() => window.innerWidth <= 1024);
+// 基礎配置
 const route = useRoute();
 const router = useRouter();
 const systemStore = useSystemStore();
 const deptOptions = computed(() => systemStore.departments);
 const sourceOptions = computed(() => systemStore.sources);
 const hrOptions = computed(() => systemStore.hrOptions);
-// 響應式數據
+
+// 響應式佈局判斷
+const isMobile = computed(() => window.innerWidth <= 1024);
+
+// 載入狀態
 const loading = ref(false);
-const candidateList = ref([]);
-const total = ref(0);
-const drawerVisible = ref(false);
-const currentRow = ref({});
-const interviewVisible = ref(false);
-const selectedCandidate = ref(null);
-// 搜尋和分頁參數
-const queryParams = reactive({
-  page: 1,
-  pageSize: 10,
-  keyword: '',
-  dept_id: '',
-  source_id: '',
-  status: '',
-  hr_id: '',
-});
-const statusOptions = [
+
+// 狀態配置
+interface StatusOption {
+  label: string;
+  value: CandidateStatus;
+}
+const statusOptions: StatusOption[] = [
   { label: '待處理', value: 'pending' },
   { label: '初步篩選', value: 'screening' },
   { label: '面試中', value: 'interviewing' },
@@ -53,59 +49,8 @@ const statusOptions = [
   { label: '已入職', value: 'hired' },
   { label: '不錄取', value: 'rejected' },
 ];
-// 獲取應徵者列表
-const getCandidatesList = async () => {
-  loading.value = true;
-  try {
-    const res = await getCandidatesListService({ ...queryParams });
-    candidateList.value = res.data.list;
-    total.value = res.data.total;
-  } catch (err) {
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-};
-// 搜索
-const handleQuery = () => {
-  // 搜尋時必須重置回第一頁
-  queryParams.page = 1;
-  getCandidatesList();
-};
-// 重置
-const handleReset = () => {
-  queryParams.keyword = '';
-  queryParams.dept_id = '';
-  queryParams.source_id = '';
-  queryParams.status = '';
-  queryParams.hr_id = '';
-  queryParams.page = 1;
-  router.replace({ query: {} });
-  getCandidatesList();
-};
-// 新增與編輯應徵者 => 打開抽屜
-const handleAdd = () => {
-  currentRow.value = {};
-  drawerVisible.value = true;
-};
-const handleEdit = (row) => {
-  currentRow.value = { ...row };
-  drawerVisible.value = true;
-};
-
-// 建立面試 => 打開彈窗
-const handleAddInterview = (row) => {
-  selectedCandidate.value = {
-    id: row.id,
-    name: row.name,
-    dept_id: row.dept_id,
-  };
-  interviewVisible.value = true;
-};
-
-// 狀態標籤顏色
-const getStatusType = (status) => {
-  const map = {
+const getStatusType = (status: CandidateStatus): 'info' | '' | 'warning' | 'success' | 'danger' => {
+  const map: Record<CandidateStatus, 'info' | '' | 'warning' | 'success' | 'danger'> = {
     pending: 'info',
     screening: '',
     interviewing: 'warning',
@@ -116,42 +61,44 @@ const getStatusType = (status) => {
   return map[status] || 'info';
 };
 
-// 初始化挂載
-onMounted(async () => {
+// 搜尋和分頁參數
+const total = ref(0);
+const queryParams = reactive<CandidateQuery>({
+  page: 1,
+  pageSize: 10,
+  keyword: '',
+  dept_id: undefined,
+  source_id: undefined,
+  status: undefined,
+  hr_id: undefined,
+});
+
+// 獲取應徵者列表
+interface CandidateItem extends Candidate {
+  _expanded?: boolean;
+}
+const candidateList = ref<CandidateItem[]>([]);
+const getCandidatesList = async () => {
   loading.value = true;
   try {
-    await systemStore.fetchAllOptions();
-    // 儀表板參數跳轉
-    if (route.query.hrId) {
-      queryParams.hr_id = route.query.hrId;
+    const res = await getCandidatesListService(queryParams);
+    if (res.success && res.data) {
+      candidateList.value = res.data.list.map((item) => ({
+        ...item,
+        _expanded: false,
+      }));
+      total.value = res.total || 0;
     }
-    getCandidatesList();
-  } catch (error) {
-    console.error('初始化失敗', error);
+  } catch (err) {
+    console.error('獲取列表失敗', err);
+    ElMessage.error('獲取數據失敗');
   } finally {
     loading.value = false;
   }
-});
-
-// 查看履歷
-const resumePreviewVisible = ref(false);
-const previewUrl = ref('');
-const handleViewResume = (url) => {
-  if (!url) return ElMessage.warning('該應徵者未上傳履歷');
-  previewUrl.value = url;
-  resumePreviewVisible.value = true;
-};
-
-// 查看詳情
-const currentId = ref(null);
-const infoVisible = ref(false);
-const handleViewDetail = async (id) => {
-  currentId.value = id;
-  infoVisible.value = true;
 };
 
 // 封存應徵者
-const handleArchive = async (row) => {
+const handleArchive = async (row: Candidate) => {
   try {
     // 二次確認
     await ElMessageBox.confirm(
@@ -176,6 +123,83 @@ const handleArchive = async (row) => {
     loading.value = false;
   }
 };
+
+// 搜索
+const handleQuery = () => {
+  // 搜尋時必須重置回第一頁
+  queryParams.page = 1;
+  getCandidatesList();
+};
+
+// 重置
+const handleReset = () => {
+  Object.assign(queryParams, {
+    page: 1,
+    keyword: '',
+    dept_id: undefined,
+    source_id: undefined,
+    status: undefined,
+    hr_id: undefined,
+  });
+  router.replace({ query: {} });
+  getCandidatesList();
+};
+
+// 彈窗相關
+const drawerVisible = ref(false);
+const currentRow = ref({});
+const interviewVisible = ref(false);
+const selectedCandidate = ref<Candidate | undefined>(undefined);
+
+// 彈窗1：新增/編輯應徵者
+const handleAdd = () => {
+  currentRow.value = {};
+  drawerVisible.value = true;
+};
+const handleEdit = (row: Candidate) => {
+  currentRow.value = { ...row };
+  drawerVisible.value = true;
+};
+
+// 彈窗2：建立面試:
+const handleAddInterview = (row: Candidate) => {
+  selectedCandidate.value = row;
+  interviewVisible.value = true;
+};
+
+// 彈窗3：查看履歷
+const resumePreviewVisible = ref(false);
+const previewUrl = ref('');
+const handleViewResume = (url: string | null) => {
+  if (!url) return ElMessage.warning('該應徵者未上傳履歷');
+  previewUrl.value = url;
+  resumePreviewVisible.value = true;
+};
+
+// 彈窗4：查看詳情
+const currentId = ref<string | undefined>(undefined);
+const infoVisible = ref(false);
+const handleViewDetail = async (id: string) => {
+  currentId.value = id;
+  infoVisible.value = true;
+};
+
+// 初始化挂載
+onMounted(async () => {
+  loading.value = true;
+  try {
+    await systemStore.fetchAllOptions();
+    // 儀表板參數跳轉
+    if (route.query.hrId) {
+      queryParams.hr_id = route.query.hrId as string;
+    }
+    getCandidatesList();
+  } catch (error) {
+    console.error('初始化失敗', error);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>

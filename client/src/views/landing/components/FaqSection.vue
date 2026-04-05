@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { Motion } from '@motionone/vue';
+import type { FAQItem } from '@/types';
 
-const faqs = [
+const faqs: FAQItem[] = [
   {
     q: 'TalentFlow 如何確保數據安全？',
     a: '我們採用企業級加密標準 (AES-256) 儲存敏感數據，並支援 SOC 2 Type II 合規。您的數據受到偏執狂級別的保護。',

@@ -1,31 +1,44 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue';
 import { userCreateService, userUpdateService } from '@/api/users';
+import type { UserList, RegisterParams, UserRole } from '@/types';
+import type { FormInstance, FormRules } from 'element-plus';
 import { useSystemStore } from '@/stores';
 import { ElMessage } from 'element-plus';
 
-// 父組件傳進的資料
-const props = defineProps({
-  visible: Boolean,
-  rowData: Object,
-});
-// emit通知父組件關閉對話框和刷新列表
-const emit = defineEmits(['update:visible', 'success']);
+// props
+interface Props {
+  visible: boolean;
+  rowData?: Partial<UserList>;
+}
+const props = defineProps<Props>();
+
+// emit
+const emit = defineEmits<{
+  (e: 'update:visible', value: boolean): void;
+  (e: 'success'): void;
+}>();
+
 // 獲取部門列表
 const systemStore = useSystemStore();
 const deptOptions = computed(() => systemStore.departments);
-// 定義表單
-const formRef = ref(null);
+
+// 定義表單型別 (繼承 RegisterParams 並增加 id)
+interface UserForm extends RegisterParams {
+  id?: string;
+}
+const formRef = ref<FormInstance>();
 const isEdit = ref(false);
-const initialForm = {
+
+const initialForm: UserForm = {
   username: '',
   password: '',
   real_name: '',
-  role: 'interviewer',
-  dept_id: '',
+  role: 'interviewer' as UserRole,
+  dept_id: undefined,
 };
-const form = ref({ ...initialForm });
-const rules = {
+const form = ref<UserForm>({ ...initialForm });
+const rules: FormRules = {
   username: [
     { required: true, message: '請輸入帳號', trigger: 'blur' },
     { min: 3, max: 20, message: '長度需在 3 到 20 個字元', trigger: 'blur' },
@@ -34,7 +47,7 @@ const rules = {
   // 密碼規則可以用函數動態處理
   password: [
     {
-      validator: (rule, value, callback) => {
+      validator: (_, value, callback) => {
         if (!isEdit.value && !value) {
           callback(new Error('新增用戶必須設置初始密碼'));
         } else {
@@ -63,10 +76,10 @@ watch(
         // 密碼欄位清空，避免顯示原密碼
         form.value = {
           id: props.rowData.id,
-          username: props.rowData.username,
-          real_name: props.rowData.real_name,
-          role: props.rowData.role,
-          dept_id: props.rowData.dept_id ? Number(props.rowData.dept_id) : '',
+          username: props.rowData.username || '',
+          real_name: props.rowData.real_name || '',
+          role: props.rowData.role || 'interviewer',
+          dept_id: props.rowData.dept_id ? Number(props.rowData.dept_id) : undefined,
           password: '',
         };
       } else {
@@ -89,7 +102,7 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
     // 封裝提交數據
-    const submitData = {
+    const submitData: Partial<RegisterParams> = {
       username: form.value.username,
       real_name: form.value.real_name,
       role: form.value.role,
@@ -99,11 +112,11 @@ const submitForm = async () => {
     if (form.value.password && form.value.password.trim() !== '') {
       submitData.password = form.value.password;
     }
-    if (isEdit.value) {
+    if (isEdit.value && form.value.id) {
       await userUpdateService(form.value.id, submitData);
       ElMessage.success('更新成功');
     } else {
-      await userCreateService(submitData);
+      await userCreateService(submitData as RegisterParams);
       ElMessage.success('新增成功');
     }
     // 通知父組件提交成功并且關彈窗

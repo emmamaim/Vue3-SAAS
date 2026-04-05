@@ -1,25 +1,41 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { PieChart } from 'echarts/charts';
 import { TooltipComponent, LegendComponent } from 'echarts/components';
+import type { ComposeOption } from 'echarts/core';
+import type { PieSeriesOption } from 'echarts/charts';
+import type { TooltipComponentOption, LegendComponentOption } from 'echarts/components';
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
 
-const props = defineProps({
-  data: {
-    type: Array,
-    default: () => [],
-  },
-  emptyText: {
-    type: String,
-    default: '暫無數據',
-  },
+// 定義 ECharts 配置項的型別組合
+type ECOption = ComposeOption<
+  PieSeriesOption | TooltipComponentOption | LegendComponentOption
+>;
+
+// 圓餅圖專用接口
+interface PieDataItem {
+  name: string;
+  value: number;
+  itemStyle?: {
+    color: string;
+  };
+}
+
+// props
+interface Props {
+  data?: PieDataItem[];
+  emptyText?: string;
+}
+const props = withDefaults(defineProps<Props>(), {
+  data: () => [],
+  emptyText: '暫無數據',
 });
 
-const option = computed(() => ({
+const option = computed<ECOption>(() => ({
   tooltip: {
     trigger: 'item',
     formatter: '{b}: {c} ({d}%)',

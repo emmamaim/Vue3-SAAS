@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
 import zhTw from 'element-plus/es/locale/lang/zh-tw.mjs'
 import 'element-plus/theme-chalk/dark/css-vars.css'
@@ -6,9 +6,11 @@ import { onMounted } from 'vue';
 import { useSystemStore } from '@/stores';
 import HomeButton from '@/components/common/HomeButton.vue';
 
+// 基礎配置
 const systemStore = useSystemStore();
 const route = useRoute();
 
+// 初始化全局配置
 onMounted(() => {
   systemStore.fetchAllOptions();
 });

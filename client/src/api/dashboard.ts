@@ -1,8 +1,14 @@
 import request from '@/utils/request';
+import type {
+  ApiResponse,
+  AdminDashboardData,
+  HrDashboardData,
+  InterviewerDashboardData,
+} from '@/types';
 
 // 管理員
 export const getAdminDashboard = () => {
-  return request({
+  return request<ApiResponse<AdminDashboardData>>({
     url: '/dashboard/admin',
     method: 'get',
   });
@@ -10,7 +16,7 @@ export const getAdminDashboard = () => {
 
 // HR
 export const getHrDashboard = () => {
-  return request({
+  return request<ApiResponse<HrDashboardData>>({
     url: '/dashboard/hr',
     method: 'get',
   });
@@ -18,7 +24,7 @@ export const getHrDashboard = () => {
 
 // 面試官
 export const getInterviewerDashboard = () => {
-  return request({
+  return request<ApiResponse<InterviewerDashboardData>>({
     url: '/dashboard/interviewer',
     method: 'get',
   });

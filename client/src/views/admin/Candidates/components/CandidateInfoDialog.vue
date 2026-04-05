@@ -1,12 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, computed, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getCandidateInfoService } from '@/api/candidate';
 import { cancelInterviewService } from '@/api/interview';
 import InterviewDialog from './InterviewDialog.vue';
 import { Edit, Delete } from '@element-plus/icons-vue';
+import type { Candidate, Interview, CandidateStatus } from '@/types';
+import axios from 'axios';
 
-// 動態計算彈窗寬度
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -23,17 +25,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-const props = defineProps({
-  modelValue: Boolean,
-  id: [Number, String],
-});
-const emit = defineEmits(['update:modelValue', 'refresh']);
-const loading = ref(false);
-const detail = ref({});
-const showInterviewDialog = ref(false);
-const selectedInterview = ref(null);
 // 狀態標籤顏色：應徵者
-const getCandidateStatusType = (status) => {
+const getCandidateStatusType = (status?: CandidateStatus): string => {
   const map = {
     pending: 'info',
     screening: '',
@@ -42,71 +35,105 @@ const getCandidateStatusType = (status) => {
     hired: 'success',
     rejected: 'danger',
   };
-  return map[status] || 'info';
+  return status ? map[status] || 'info' : 'info';
 };
+
 // 狀態標籤顏色：面試
-const getInterviewStatusType = (status) => {
-  const map = {
+const getInterviewStatusType = (status?: string) => {
+  const map: Record<string, string> = {
     scheduled: 'primary',
     completed: 'success',
     cancelled: 'info',
   };
-  return map[status] || 'info';
+  return status ? map[status] || 'info' : 'info';
 };
+
 // 狀態標簽顔色：面試結果
-const getResultTagType = (result) => {
-  const map = {
+const getResultTagType = (result?: string) => {
+  const map: Record<string, string> = {
     pass: 'success',
     pending: 'warning',
     fail: 'danger',
   };
-  return map[result] || 'info';
+  return result ? map[result] || 'info' : 'info';
 };
+
 // 狀態標簽文字：面試結果
-const getResultLabel = (result) => {
-  const map = {
+const getResultLabel = (result?: string) => {
+  const map: Record<string, string> = {
     pass: '通過',
     pending: '待定',
     fail: '未通過',
   };
-  return map[result] || '尚未評定';
+  return result ? map[result] || '尚未評定' : '尚未評定';
 };
+
+// props
+interface Props {
+  modelValue: boolean;
+  id?: string | null;
+}
+const props = defineProps<Props>();
+
+// emit
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+  (e: 'refresh'): void;
+}>();
+
+// 載入狀態
+const loading = ref(false);
+
+// 數據
+const detail = ref<Partial<Candidate>>({});
+const showInterviewDialog = ref(false);
+const selectedInterview = ref<Interview | null>(null);
+
 // 監聽ID變化
 watch(
   () => [props.modelValue, props.id],
   async ([isOpen, newId]) => {
-    if (isOpen && newId) {
-      fetchDetail(newId);
+    if (isOpen && newId !== null && newId !== undefined) {
+      fetchDetail(newId as string);
     }
   },
   { immediate: true },
 );
+
 // 獲取詳情
-const fetchDetail = async (id) => {
+const fetchDetail = async (id: string) => {
   loading.value = true;
   try {
     const res = await getCandidateInfoService(id);
-    if (res.success) {
-      res.data.interviews?.sort((a, b) => new Date(a.date) - new Date(b.date));
-      detail.value = res.data;
+    if (res.success && res.data) {
+      if (res.data.interviews) {
+        res.data.interviews?.sort(
+          (a: Interview, b: Interview) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+      }
+      detail.value = res.data || {};
     }
-  } catch (error) {
-    ElMessage.error('獲取詳情失敗：' + error.message);
+  } catch (error: unknown) {
+    let msg = '未知錯誤';
+    if (axios.isAxiosError(error)) {
+      msg = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      msg = error.message;
+    }
+    ElMessage.error('獲取詳情失敗：' + msg);
   } finally {
     loading.value = false;
   }
 };
-// 關閉彈窗
-const handleClose = () => {
-  emit('update:modelValue', false);
-};
+
 // 編輯面試
-const handleEditInterview = (item) => {
+const handleEditInterview = (item: Interview) => {
   selectedInterview.value = { ...item };
   showInterviewDialog.value = true;
 };
+
 // 取消面試
-const handleCancelInterview = async (interviewId) => {
+const handleCancelInterview = async (interviewId: string) => {
   ElMessageBox.confirm('確定要取消這場面試嗎？這將會同步從面試官的行事曆中移除。', '取消確認', {
     confirmButtonText: '確定',
     cancelButtonText: '取消',
@@ -115,12 +142,25 @@ const handleCancelInterview = async (interviewId) => {
     try {
       await cancelInterviewService(interviewId);
       ElMessage.success('面試已成功取消');
-      fetchDetail(props.id);
+      if (props.id) fetchDetail(props.id);
       emit('refresh');
-    } catch (error) {
-      ElMessage.error('取消失敗：' + error.message);
+    } catch (err: unknown) {
+      if (err === 'cancel') return;
+
+      let msg = '取消失敗';
+      if (axios.isAxiosError(err)) {
+        msg = err.response?.data?.message || err.message;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      ElMessage.error(msg);
     }
   });
+};
+
+// 關閉彈窗
+const handleClose = () => {
+  emit('update:modelValue', false);
 };
 </script>
 
@@ -206,7 +246,7 @@ const handleCancelInterview = async (interviewId) => {
       v-model="showInterviewDialog"
       :interview="selectedInterview"
       @refresh="
-        fetchDetail(props.id);
+        props.id && fetchDetail(props.id);
         emit('refresh');
       "
     />

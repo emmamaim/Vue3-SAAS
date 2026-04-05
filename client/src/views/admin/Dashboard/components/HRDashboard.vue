@@ -1,25 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { getHrDashboard } from '@/api/dashboard';
 import TrendChart from './TrendChart.vue';
 import PieChart from './PieChart.vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores';
+import type { HrDashboardData } from '@/types';
 
+// 基礎配置
 const userStore = useUserStore();
 const router = useRouter();
 const loading = ref(false);
 
 // 數據
-const dashboardData = ref({
+const dashboardData = ref<HrDashboardData>({
   stats: { myCandidates: 0, myActiveJobs: 0, myTodayInterviews: 0 },
   trend: [],
   statusData: [],
   upcoming: [],
+  updatedAt: '',
 });
 
 // 定義標簽顔色和標簽内容
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: '待處理', color: '#909399' },
   screening: { label: '篩選中', color: '#409EFF' },
   interviewing: { label: '面試中', color: '#E6A23C' },
@@ -44,7 +47,8 @@ const fetchData = async () => {
 // 轉換數據 => PieChart
 const formattedPieData = computed(() => {
   return dashboardData.value.statusData.map((item) => {
-    const config = statusConfig[item.status] || { label: item.status, color: '#DCDFE6' };
+    const statusKey = item.status || 'unknown';
+    const config = statusConfig[statusKey] || { label: statusKey, color: '#DCDFE6' };
     return {
       name: config.label,
       value: item.count,
@@ -55,16 +59,18 @@ const formattedPieData = computed(() => {
   });
 });
 
-const isToday = (dateStr) => {
+const isToday = (dateStr: string) => {
   return dateStr === new Date().toISOString().slice(0, 10);
 };
 
 // 參數跳轉
 const goToCandidates = () => {
+  const hrId = userStore.userInfo?.id;
+  if (!hrId) return;
   router.push({
     path: '/admin/candidates',
     query: {
-      hrId: userStore.userInfo.id,
+      hrId: hrId,
     },
   });
 };

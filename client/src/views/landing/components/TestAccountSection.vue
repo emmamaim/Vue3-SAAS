@@ -1,10 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { Motion } from '@motionone/vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import type { TestAccount } from '@/types';
 
+// 路由
 const router = useRouter();
-const quickLogin = (user, pass) => {
+
+// 快速登入
+type AccountField = 'user' | 'pass';
+const fields: AccountField[] = ['user', 'pass'];
+const quickLogin = (user: string, pass: string): void => {
   router.push({
     path: '/login',
     query: {
@@ -14,7 +20,7 @@ const quickLogin = (user, pass) => {
   });
 };
 
-const accounts = [
+const accounts: TestAccount[] = [
   {
     role: '管理員',
     user: 'adminTest1',
@@ -38,15 +44,17 @@ const accounts = [
   },
 ];
 
-const copiedField = ref('');
-
-const copyToClipboard = (text, fieldId) => {
-  navigator.clipboard.writeText(text).then(() => {
+const copiedField = ref<string>('');
+const copyToClipboard = async (text: string, fieldId: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
     copiedField.value = fieldId;
     setTimeout(() => {
       copiedField.value = '';
-    }, 2000); // 2秒後重置
-  });
+    }, 2000);
+  } catch (err) {
+    console.error('複製失敗:', err);
+  }
 };
 </script>
 
@@ -93,7 +101,7 @@ const copyToClipboard = (text, fieldId) => {
             <p class="text-sm text-gray-400 mt-4 mb-8 flex-1">{{ acc.desc }}</p>
 
             <div class="space-y-4 mb-10">
-              <div v-for="field in ['user', 'pass']" :key="field" class="relative">
+              <div v-for="field in fields" :key="field" class="relative">
                 <label class="text-xs text-gray-500 font-mono uppercase tracking-widest mb-1 block">
                   {{ field === 'user' ? '帳號' : '密碼' }}
                 </label>

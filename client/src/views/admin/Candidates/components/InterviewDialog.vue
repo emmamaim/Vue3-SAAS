@@ -1,12 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, watch, computed, onUnmounted } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { useBookingStore, useSystemStore } from '@/stores';
 import { createInterviewService, updateInterviewService } from '@/api/interview';
 import { getCandidateInfoService } from '@/api/candidate';
 import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time';
+import type { Candidate, Interview, CreateInterviewPayload, UpdateInterviewPayload } from '@/types';
+import axios from 'axios';
 
-// 動態計算彈窗寬度
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -23,20 +25,35 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-const props = defineProps({
-  modelValue: Boolean,
-  candidate: Object,
-  interview: Object,
+// props
+interface Props {
+  modelValue: boolean;
+  candidate?: Candidate | null;
+  interview?: Interview | null;
+}
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: false,
+  candidate: null,
+  interview: null,
 });
-const isEdit = computed(() => !!props.interview?.id);
-const emit = defineEmits(['update:modelValue', 'refresh']);
+
+// emit
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+  (e: 'refresh'): void;
+}>();
+
+// 基礎配置
 const bookingStore = useBookingStore();
 const systemStore = useSystemStore();
+const isEdit = computed(() => !!props.interview?.id);
+
 // 根據部門動態過濾面試官
-const filterDeptId = ref('');
+const filterDeptId = ref<number | ''>('');
 const displayInterviewers = computed(() => {
   return systemStore.getInterviewerByDept(filterDeptId.value);
 });
+
 // --- 附加功能旗標 ---
 const adjustedOnce = ref(false);
 const endOutOfRange = ref(false);
@@ -44,12 +61,14 @@ const loading = ref(false);
 // 附加功能1：當選擇開始時間 => 自動調整結束時間
 // 附加功能2：檢測時間衝突 => 自動導航可選的時間區間
 // 附加功能3：超出時間範圍 => 禁用儲存按鈕
+
 // 表單資料
-const formRef = ref(null);
+const formRef = ref<FormInstance | null>(null);
 const form = reactive({
-  candidate_id: '',
+  id: '',
+  candidate_id: '' as string,
   interviewer_id: '',
-  dept_id: '',
+  dept_id: 0,
   interview_round: 1,
   date: new Date().toISOString().slice(0, 10),
   startTime: '10:00',
@@ -58,27 +77,29 @@ const form = reactive({
   location: '線上會議室',
   title: '',
 });
-// 表單驗證
-const rules = {
+
+// 表單規則
+const rules: FormRules = {
   interviewer_id: [{ required: true, message: '請選擇面試官', trigger: 'change' }],
   date: [{ required: true, message: '請選擇日期', trigger: 'change' }],
   startTime: [{ required: true, message: '請選擇開始時間', trigger: 'change' }],
   durationMin: [{ required: true, message: '請選擇面試時長', trigger: 'change' }],
 };
+
 // 監聽1: modelValue => 初始化彈窗
 watch(
   () => props.modelValue,
   async (v) => {
     if (!v) return;
     systemStore.fetchAllOptions();
-    if (isEdit.value) {
-      // 編輯模式：直接回填傳入的數據
+    if (isEdit.value && props.interview) {
+      // 編輯模式
       Object.assign(form, props.interview);
-      if (form.startTime && form.endTime) {
-        form.startTime = form.startTime.slice(0, 5);
-        form.endTime = form.endTime.slice(0, 5);
-        form.durationMin = toMinutes(form.endTime) - toMinutes(form.startTime);
-      }
+      form.startTime = form.startTime.slice(0, 5);
+      form.endTime = form.endTime.slice(0, 5);
+      const s = toMinutes(form.startTime);
+      const e = toMinutes(form.endTime);
+      if (s !== null && e !== null) form.durationMin = e - s;
     } else if (props.candidate) {
       // 新增模式
       form.id = '';
@@ -88,7 +109,7 @@ watch(
       // 計算面試輪次
       try {
         const res = await getCandidateInfoService(props.candidate.id);
-        form.interview_round = (res.data.interviews?.length || 0) + 1;
+        form.interview_round = (res.data?.interviews?.length || 0) + 1;
       } catch {
         form.interview_round = 1;
       }
@@ -111,12 +132,13 @@ watch(
 );
 // 監聽3: startTime/furationMin => 自動調整endTime
 watch(
-  () => [form.startTime, form.durationMin],
+  () => [form.startTime, form.durationMin] as const,
   ([newStart, newDuration]) => {
     const s = toMinutes(newStart);
-    if (s !== null) {
+    const endMaxMin = toMinutes(END_MAX_STR);
+    if (s !== null && endMaxMin !== null) {
       const next = s + newDuration;
-      endOutOfRange.value = next > END_MAX_STR;
+      endOutOfRange.value = next > endMaxMin;
       form.endTime = toHHmm(next);
     }
   },
@@ -128,17 +150,25 @@ watch(
     adjustedOnce.value = false;
   },
 );
+
 // 關閉彈窗
 const handleClose = () => emit('update:modelValue', false);
+
 // 提交（建立面試 => 檢測衝突 => 自動導航調整=> 執行三表聯動）
 async function onSubmit() {
   // 防止重複提交
   if (loading.value) return;
-  // 1. 基本驗證
+  // 基本驗證
   if (!form.interviewer_id) return ElMessage.warning('請選擇面試官');
+  if (!formRef.value) return;
+
   const sMin = toMinutes(form.startTime);
+  const endMaxMin = toMinutes(END_MAX_STR);
+  if (sMin === null || endMaxMin === null) {
+    return ElMessage.error('時間格式錯誤');
+  }
   const eMin = sMin + form.durationMin;
-  if (eMin > END_MAX_STR) {
+  if (eMin > endMaxMin) {
     return ElMessage.error('結束時間超出範圍 (20:30)，請縮短時長或提前開始');
   }
   try {
@@ -159,7 +189,8 @@ async function onSubmit() {
     .map((b) => ({
       s: toMinutes(b.startTime),
       e: toMinutes(b.endTime),
-    }));
+    }))
+    .filter((b): b is { s: number; e: number } => b.s !== null && b.e !== null);
   // 3. 檢測時間衝突
   const hasConflict = blocks.some((b) => isOverlap(sMin, eMin, b.s, b.e));
   if (hasConflict) {
@@ -195,18 +226,45 @@ async function onSubmit() {
       return ElMessage.error('資料異常：找不到應徵者的部門 ID');
     }
     if (isEdit.value) {
-      await updateInterviewService(form.id, submitData);
+      const updatePayload: UpdateInterviewPayload = {
+        interviewer_id: form.interviewer_id,
+        interview_round: form.interview_round,
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        location: form.location,
+        title: form.title,
+      };
+      await updateInterviewService(form.id, updatePayload);
       ElMessage.success('面試行程更新成功！');
     } else {
-      await createInterviewService(submitData);
+      const createPayload: CreateInterviewPayload = {
+        candidate_id: form.candidate_id,
+        interviewer_id: form.interviewer_id,
+        dept_id: form.dept_id,
+        interview_round: form.interview_round,
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        location: form.location,
+        title: form.title,
+      };
+      await createInterviewService(createPayload);
       ElMessage.success('面試安排成功！已同步至該面試官的行事曆與任務清單');
     }
     emit('refresh');
     handleClose();
-  } catch (e) {
-    if (e.response && e.response.status === 409) {
-      ElMessage.error('預約失敗：該時段已被佔用（後端衝突檢查），請重新同步行程。');
-      bookingStore.fetchAll({ userId: form.interviewer_id });
+  } catch (e: unknown) {
+    if (axios.isAxiosError(e)) {
+      if (e.response && e.response.status === 409) {
+        ElMessage.error('預約失敗：該時段已被佔用（後端衝突檢查），請重新同步行程。');
+        bookingStore.fetchAll({ userId: form.interviewer_id });
+      } else {
+        ElMessage.error(e.response?.data?.message || '發生未知錯誤');
+      }
+    } else {
+      console.error('Non-Axios Error:', e);
+      ElMessage.error('系統發生錯誤，請稍後再試');
     }
   } finally {
     loading.value = false;

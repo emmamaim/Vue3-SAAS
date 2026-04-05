@@ -1,9 +1,10 @@
-<script setup>
-import { reactive, ref, watch, computed, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time'
+<script setup lang="ts">
+import { reactive, ref, watch, computed, onUnmounted } from 'vue';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { toMinutes, toHHmm, isOverlap, findNextAvailableSlot, END_MAX_STR } from '@/utils/time';
+import type { Booking, CreateBookingPayload, UpdateBookingPayload } from '@/types';
 
-// 動態計算彈窗寬度
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -20,25 +21,46 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  mode: { type: String, default: 'create' },
-  initial: { type: Object, default: null },
-  saving: { type: Boolean, default: false },
-  conflictMsg: { type: String, default: '' },
-  allBookings: { type: Array, default: () => [] },
-})
-const emit = defineEmits(['cancel', 'submit'])
+// props
+interface Props {
+  open: boolean;
+  mode?: 'create' | 'edit';
+  initial?: Partial<Booking> | null;
+  saving?: boolean;
+  conflictMsg?: string;
+  allBookings?: Booking[];
+}
+const props = withDefaults(defineProps<Props>(), {
+  open: false,
+  mode: 'create',
+  initial: null,
+  saving: false,
+  conflictMsg: '',
+  allBookings: () => [],
+});
+
+// emit
+const emit = defineEmits<{
+  (e: 'cancel'): void;
+  (e: 'submit', payload: CreateBookingPayload | UpdateBookingPayload): void;
+}>();
+
 // --- 狀態控制 ---
-const adjustedOnce = ref(false)
-const endOutOfRange = ref(false)
-const formRef = ref(null)
+const adjustedOnce = ref<boolean>(false);
+const endOutOfRange = ref<boolean>(false);
+const formRef = ref<FormInstance>();
 
 // 【核心判斷】是否為面試關聯行程 (不可編輯)
-const isLocked = computed(() => !!form.relatedTaskId)
+const isLocked = computed(() => !!form.relatedTaskId);
+
+// 表單資料型別
+interface BookingForm extends Partial<Booking> {
+  durationMin: number;
+}
+
 // 表單資料
-const form = reactive({
-  id: null,
+const form = reactive<BookingForm>({
+  id: undefined,
   title: '',
   date: '',
   startTime: '',
@@ -46,89 +68,133 @@ const form = reactive({
   durationMin: 60,
   status: 'confirmed',
   relatedTaskId: null,
-  user_id: null
-})
-// 監聽彈窗打開：初始化資料
-watch(() => props.open, (v) => {
-  if (!v) return
-  const b = props.initial
-  form.id = b?.id ?? null
-  form.title = b?.title ?? ''
-  form.date = b?.date ?? new Date().toISOString().slice(0, 10)
-  form.startTime = b?.startTime ?? '10:00'
-  form.durationMin = b?.durationMin ?? 60
-  form.status = b?.status ?? 'confirmed'
-  form.relatedTaskId = b?.relatedTaskId ?? null
-  form.user_id = b?.user_id ?? null
+  user_id: undefined,
+});
 
-  calculateEndTime()
-  adjustedOnce.value = false
-  queueMicrotask(() => formRef.value?.clearValidate?.())
-})
+// 監聽彈窗打開：初始化資料
+watch(
+  () => props.open,
+  (v) => {
+    if (!v) return;
+    const b = props.initial;
+    form.id = b?.id;
+    form.title = b?.title ?? '';
+    form.date = b?.date ?? new Date().toISOString().slice(0, 10);
+    form.startTime = b?.startTime ?? '10:00';
+    form.durationMin = 60;
+    form.status = b?.status ?? 'confirmed';
+    form.relatedTaskId = b?.relatedTaskId ?? null;
+    form.user_id = b?.user_id;
+
+    calculateEndTime();
+    adjustedOnce.value = false;
+    queueMicrotask(() => formRef.value?.clearValidate?.());
+  },
+);
+
 // 自動計算結束時間
 const calculateEndTime = () => {
-  const s = toMinutes(form.startTime)
+  if (!form.startTime) return;
+  const s = toMinutes(form.startTime);
   if (s !== null) {
-    const next = s + form.durationMin
-    endOutOfRange.value = next > toMinutes(END_MAX_STR)
-    form.endTime = toHHmm(next)
+    const next = s + form.durationMin;
+    endOutOfRange.value = next > toMinutes(END_MAX_STR)!;
+    form.endTime = toHHmm(next);
   }
-}
+};
+
 // 監聽：計算結束時間，重置調整旗標
-watch(() => [form.startTime, form.durationMin], calculateEndTime)
-watch(() => [form.date, form.startTime], () => { adjustedOnce.value = false })
+watch(() => [form.startTime, form.durationMin], calculateEndTime);
+watch(
+  () => [form.date, form.startTime],
+  () => {
+    adjustedOnce.value = false;
+  },
+);
 
 // 驗證規則
-const rules = {
+const rules: FormRules = {
   title: [{ required: true, message: '請輸入標題', trigger: 'blur' }],
   date: [{ required: true, message: '請選擇日期', trigger: 'change' }],
   startTime: [{ required: true, message: '請選擇開始時間', trigger: 'change' }],
-}
+};
 
 // 提交處理
 async function onSubmit() {
-  if (props.saving || isLocked.value) return
+  if (props.saving || isLocked.value) return;
   // 表單驗證
   try {
-    await formRef.value?.validate()
-  } catch { return }
-  const sMin = toMinutes(form.startTime)
-  const eMin = sMin + form.durationMin
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  const sMin = toMinutes(form.startTime!);
+  if (sMin === null) return;
+  const eMin = sMin + form.durationMin;
   // 時間範圍檢查
-  if (eMin > toMinutes(END_MAX_STR)) {
-    return ElMessage.error(`結束時間不可超過 ${END_MAX_STR}`)
+  if (eMin > toMinutes(END_MAX_STR)!) {
+    return ElMessage.error(`結束時間不可超過 ${END_MAX_STR}`);
   }
   // 時間衝突檢查 (排除當前編輯的 ID)
   const blocks = (props.allBookings || [])
-    .filter(b => b.date?.slice(0, 10) === form.date && b.id !== form.id)
-    .map(b => ({ s: toMinutes(b.startTime), e: toMinutes(b.endTime) }))
+    .filter((b) => b.date?.slice(0, 10) === form.date && b.id !== form.id)
+    .map((b) => ({
+      s: toMinutes(b.startTime) ?? 0,
+      e: toMinutes(b.endTime) ?? 0,
+    }));
 
-  const hasConflict = blocks.some(b => isOverlap(sMin, eMin, b.s, b.e))
+  const hasConflict = blocks.some((b) => isOverlap(sMin, eMin, b.s, b.e));
   if (hasConflict) {
     if (!adjustedOnce.value) {
-      const next = findNextAvailableSlot(sMin, form.durationMin, blocks)
-      if (!next) return ElMessage.error('該日期已無空檔')
-      form.startTime = toHHmm(next.s)
-      form.endTime = toHHmm(next.e)
-      adjustedOnce.value = true
-      ElMessage.warning(`偵測到衝突，已為您調整至最近空檔：${form.startTime}`)
-      return
+      const next = findNextAvailableSlot(sMin, form.durationMin, blocks);
+      if (!next) return ElMessage.error('該日期已無空檔');
+      form.startTime = toHHmm(next.s);
+      form.endTime = toHHmm(next.e);
+      adjustedOnce.value = true;
+      ElMessage.warning(`偵測到衝突，已為您調整至最近空檔：${form.startTime}`);
+      return;
     }
-    return ElMessage.error('仍存在衝突，請手動修改時間')
+    return ElMessage.error('仍存在衝突，請手動修改時間');
   }
-  emit('submit', { ...form })
+  const { durationMin: _, ...payload } = form;
+
+  if (props.mode === 'create') {
+    emit('submit', payload as CreateBookingPayload);
+  } else {
+    emit('submit', payload as UpdateBookingPayload);
+  }
 }
+
 // 關閉彈窗
-function onCancel() { emit('cancel') }
+function onCancel() {
+  emit('cancel');
+}
 </script>
 
 <template>
-  <el-dialog :model-value="open" :title="isLocked ? '檢視面試行程 (唯讀)' : (mode === 'create' ? '新增行程' : '編輯行程')" :width="dialogSize"
-    @close="onCancel" destroy-on-close>
-    <el-alert v-if="isLocked" title="此為系統同步的面試行程，無法在此直接修改。如需調整請聯繫 HR 或至面試管理模組。" type="warning" show-icon
-      :closable="false" style="margin-bottom: 18px" />
+  <el-dialog
+    :model-value="open"
+    :title="isLocked ? '檢視面試行程 (唯讀)' : mode === 'create' ? '新增行程' : '編輯行程'"
+    :width="dialogSize"
+    @close="onCancel"
+    destroy-on-close
+  >
+    <el-alert
+      v-if="isLocked"
+      title="此為系統同步的面試行程，無法在此直接修改。如需調整請聯繫 HR 或至面試管理模組。"
+      type="warning"
+      show-icon
+      :closable="false"
+      style="margin-bottom: 18px"
+    />
 
-    <el-alert v-if="conflictMsg" :title="conflictMsg" type="error" show-icon style="margin-bottom: 15px" />
+    <el-alert
+      v-if="conflictMsg"
+      :title="conflictMsg"
+      type="error"
+      show-icon
+      style="margin-bottom: 15px"
+    />
 
     <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" status-icon>
       <el-form-item label="標題" prop="title">
@@ -136,13 +202,24 @@ function onCancel() { emit('cancel') }
       </el-form-item>
 
       <el-form-item label="日期" prop="date">
-        <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" style="width: 100%"
-          :disabled="isLocked" />
+        <el-date-picker
+          v-model="form.date"
+          type="date"
+          value-format="YYYY-MM-DD"
+          style="width: 100%"
+          :disabled="isLocked"
+        />
       </el-form-item>
 
       <el-form-item label="開始時間" prop="startTime">
-        <el-time-select v-model="form.startTime" start="08:00" step="00:30" end="20:00" style="width: 100%"
-          :disabled="isLocked" />
+        <el-time-select
+          v-model="form.startTime"
+          start="08:00"
+          step="00:30"
+          end="20:00"
+          style="width: 100%"
+          :disabled="isLocked"
+        />
       </el-form-item>
 
       <el-form-item label="時長">
@@ -171,7 +248,13 @@ function onCancel() { emit('cancel') }
 
     <template #footer>
       <el-button @click="onCancel">{{ isLocked ? '關閉' : '取消' }}</el-button>
-      <el-button v-if="!isLocked" type="primary" :loading="saving" :disabled="endOutOfRange" @click="onSubmit">
+      <el-button
+        v-if="!isLocked"
+        type="primary"
+        :loading="saving"
+        :disabled="endOutOfRange"
+        @click="onSubmit"
+      >
         儲存行程
       </el-button>
     </template>

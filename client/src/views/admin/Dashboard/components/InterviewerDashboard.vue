@@ -1,69 +1,74 @@
-<script setup>
-import { ref, onMounted, computed } from 'vue'
-import { getInterviewerDashboard } from '@/api/dashboard'
-import { useBookingStore } from '@/stores'
-import TrendChart from './TrendChart.vue'
-import PieChart from './PieChart.vue'
-import { useRouter } from 'vue-router'
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { getInterviewerDashboard } from '@/api/dashboard';
+import { useBookingStore } from '@/stores';
+import TrendChart from './TrendChart.vue';
+import PieChart from './PieChart.vue';
+import { useRouter } from 'vue-router';
+import type { InterviewerDashboardData } from '@/types';
 
-const router = useRouter()
-const bookingStore = useBookingStore()
+// 基礎配置
+const router = useRouter();
+const bookingStore = useBookingStore();
+const loading = ref(false);
 
-const loading = ref(false)
-const dashboardData = ref({
-    stats: { pendingTasks: 0, todayInterviews: 0, monthlyCompleted: 0 },
-    trend: [],
-    distribution: []
-})
+// 初始化看板數據
+const dashboardData = ref<InterviewerDashboardData>({
+  stats: { pendingTasks: 0, todayInterviews: 0, monthlyCompleted: 0 },
+  trend: [],
+  distribution: [],
+  updatedAt: '',
+});
 
 // 定義標簽顔色和標簽内容
-const resultConfig = {
-    'pass': { label: '通過', color: '#67C23A' },
-    'fail': { label: '不通過', color: '#F56C6C' },
-    'pending': { label: '待定', color: '#909399' },
-}
+const resultConfig: Record<string, { label: string; color: string }> = {
+  pass: { label: '通過', color: '#67C23A' },
+  fail: { label: '不通過', color: '#F56C6C' },
+  pending: { label: '待定', color: '#909399' },
+};
 
 // 獲取面試官數據
 const fetchData = async () => {
-    loading.value = true
-    try {
-        const dashboardTask = getInterviewerDashboard().then(res => {
-            dashboardData.value = res.data || dashboardData.value
-        })
-        const bookingTask = bookingStore.fetchAll()
-        await Promise.all([dashboardTask, bookingTask])
-    } finally {
-        loading.value = false
-    }
-}
+  loading.value = true;
+  try {
+    const dashboardTask = getInterviewerDashboard().then((res) => {
+      dashboardData.value = res.data || dashboardData.value;
+    });
+    const bookingTask = bookingStore.fetchAll();
+    await Promise.all([dashboardTask, bookingTask]);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 轉換數據 => PieChart
 const formmtedPieData = computed(() => {
-    return dashboardData.value.distribution.map(item => {
-        const cfg = resultConfig[item.result] || { label: item.result, color: '#DCDFE6' }
-        return {
-            name: cfg.label,
-            value: item.count,
-            itemStyle: {
-                color: cfg.color
-            }
-        }
-    })
-})
+  return dashboardData.value.distribution.map((item) => {
+    const resKey = item.result || 'pending';
+    const cfg = resultConfig[resKey] || { label: resKey, color: '#DCDFE6' };
+    return {
+      name: cfg.label,
+      value: item.count,
+      itemStyle: {
+        color: cfg.color,
+      },
+    };
+  });
+});
 
-const isToday = (dateStr) => {
-    return dateStr === new Date().toISOString().slice(0, 10)
-}
+const isToday = (dateStr: string) => {
+  return dateStr === new Date().toISOString().slice(0, 10);
+};
 
 const goToBooking = () => {
-    router.push('/admin/bookings')
-}
+  router.push('/admin/bookings');
+};
 
 const goToTask = () => {
-    router.push('/admin/tasks')
-}
+  router.push('/admin/tasks');
+};
 
-onMounted(fetchData)
+onMounted(fetchData);
 </script>
 
 <template>
@@ -77,7 +82,7 @@ onMounted(fetchData)
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :xs="12" :sm="12" :md="8" class="db-mb">
         <el-card class="db-kpi-card db-clickable shadow-sm" @click="goToBooking">
           <div class="db-kpi-label">今日面試</div>
@@ -86,7 +91,7 @@ onMounted(fetchData)
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :xs="12" :sm="24" :md="8" class="db-mb">
         <el-card class="db-kpi-card shadow-sm">
           <div class="db-kpi-label">本月已完成</div>
@@ -103,11 +108,7 @@ onMounted(fetchData)
           <template #header>
             <div class="db-section-title">近七日面試趨勢</div>
           </template>
-          <TrendChart 
-            :data="dashboardData.trend" 
-            title="面試人數" 
-            color="#409EFF" 
-          />
+          <TrendChart :data="dashboardData.trend" title="面試人數" color="#409EFF" />
         </el-card>
       </el-col>
 
@@ -126,24 +127,26 @@ onMounted(fetchData)
             <div class="db-section-title">近日面試行程</div>
           </template>
           <div class="db-timeline-wrapper">
-            <el-empty 
-              v-if="bookingStore.upcoming.length === 0" 
-              description="暫無未來行程" 
-              :image-size="60" 
+            <el-empty
+              v-if="bookingStore.upcoming.length === 0"
+              description="暫無未來行程"
+              :image-size="60"
             />
             <el-timeline v-else class="db-timeline">
-              <el-timeline-item 
-                v-for="b in bookingStore.upcoming" 
+              <el-timeline-item
+                v-for="b in bookingStore.upcoming"
                 :key="b.id"
-                :timestamp="`${b.date} ${b.startTime}`" 
+                :timestamp="`${b.date} ${b.startTime}`"
                 :type="isToday(b.date) ? 'primary' : ''"
               >
                 <div class="db-interview-item">
                   <div class="db-interview-target">
                     <span class="db-interview-candidate">{{ b.title }}</span>
-                    <el-tag size="small" effect="plain" type="info">{{ b.type || '面試' }}</el-tag>
+                    <el-tag size="small" effect="plain" type="info">{{
+                      b.status === 'confirmed' ? '正式面試' : '待定行程'
+                    }}</el-tag>
                   </div>
-                  </div>
+                </div>
               </el-timeline-item>
             </el-timeline>
           </div>

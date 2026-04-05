@@ -1,7 +1,9 @@
-<script setup>
-import { computed, ref, reactive, watch, onUnmounted } from 'vue'
+<script setup lang="ts">
+import { computed, ref, reactive, watch, onUnmounted } from 'vue';
+import type { FormInstance, FormRules } from 'element-plus';
+import type { Task, TaskFeedbackPayload } from '@/types';
 
-// 動態計算彈窗寬度
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -18,61 +20,81 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-const props = defineProps({
-  open: { type: Boolean, default: false },
-  initial: { type: Object, default: null },
-  saving: { type: Boolean, default: false },
-})
-const emit = defineEmits(['cancel', 'submit'])
+// props
+interface Props {
+  open: boolean;
+  initial?: Task | null;
+  saving?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  open: false,
+  initial: null,
+  saving: false,
+});
+
+// emit
+const emit = defineEmits<{
+  (e: 'cancel'): void;
+  (e: 'submit', payload: TaskFeedbackPayload): void;
+}>();
 
 // 表單
-const formRef = ref(null)
-const form = reactive({
+const formRef = ref<FormInstance>();
+const form = reactive<TaskFeedbackPayload>({
   result: 'pending',
   comments: '',
-})
+});
+
 // 表單驗證規則
-const rules = computed(() => ({
+const rules = computed<FormRules>(() => ({
   result: [{ required: true, message: '請選擇面試結果', trigger: 'change' }],
   comments: [{ required: true, message: '請輸入面試評價內容', trigger: 'blur' }],
-}))
-// 監聽 open => 重置表單
+}));
+
+// 監聽 open
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      if (props.initial?.result) {
-        form.result = props.initial.result || 'pending'
-        form.comments = props.initial.comments || ''
+      if (props.initial) {
+        form.result = props.initial.result || 'pending';
+        form.comments = props.initial.comments || '';
       } else {
-        form.result = 'pending',
-          form.comments = ''
+        form.result = 'pending';
+        form.comments = '';
       }
       // 清除驗證紅字
-      queueMicrotask(() => formRef.value?.clearValidate?.())
+      queueMicrotask(() => formRef.value?.clearValidate?.());
     }
   },
-)
+);
 
 // 關閉視窗
 function onCancel() {
-  emit('cancel')
+  emit('cancel');
 }
 
 // 提交
 async function onSubmit() {
-  const valid = await formRef.value?.validate?.().catch(() => false)
-  if (!valid) return
+  const valid = await formRef.value?.validate?.().catch(() => false);
+  if (!valid) return;
   emit('submit', {
     result: form.result,
     comments: form.comments.trim(),
-  })
+  });
 }
 </script>
 
 <template>
-  <el-dialog :model-value="open" title="提交面試評價" :width="dialogSize" @close="onCancel" :close-on-click-modal="false"
-    append-to-body>
+  <el-dialog
+    :model-value="open"
+    title="提交面試評價"
+    :width="dialogSize"
+    @close="onCancel"
+    :close-on-click-modal="false"
+    append-to-body
+  >
     <div v-if="initial" class="task-info">
       <div class="info-item">
         <span class="label">面試主題：</span>
@@ -96,16 +118,20 @@ async function onSubmit() {
       </el-form-item>
 
       <el-form-item label="詳細評價" prop="comments">
-        <el-input v-model="form.comments" type="textarea" :rows="5" placeholder="請輸入技術能力評估、軟實力觀察等評價內容..."
-          maxlength="500" show-word-limit />
+        <el-input
+          v-model="form.comments"
+          type="textarea"
+          :rows="5"
+          placeholder="請輸入技術能力評估、軟實力觀察等評價內容..."
+          maxlength="500"
+          show-word-limit
+        />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <el-button @click="onCancel">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="onSubmit">
-        確認提交
-      </el-button>
+      <el-button type="primary" :loading="saving" @click="onSubmit"> 確認提交 </el-button>
     </template>
   </el-dialog>
 </template>

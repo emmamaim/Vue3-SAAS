@@ -1,8 +1,9 @@
 import request from '@/utils/request';
+import type { ApiResponse, LoginParams, User } from '@/types';
 
 // 登入
-export const userLoginService = (data) => {
-  return request({
+export const userLoginService = (data: LoginParams) => {
+  return request<ApiResponse<User>>({
     url: '/auth/login',
     method: 'post',
     data,
@@ -11,7 +12,7 @@ export const userLoginService = (data) => {
 
 // 登出
 export const userLogoutService = () => {
-  return request({
+  return request<ApiResponse<null>>({
     url: '/auth/logout',
     method: 'post',
   });
@@ -19,7 +20,7 @@ export const userLogoutService = () => {
 
 // 獲取當前登入者資訊
 export const getMeService = () => {
-  return request({
+  return request<ApiResponse<User>>({
     url: '/auth/me',
     method: 'get',
   });

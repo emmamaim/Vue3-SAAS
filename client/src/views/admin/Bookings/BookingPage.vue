@@ -1,10 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useBookingStore, useUserStore, useSystemStore } from '@/stores';
 import BookingDialog from '@/views/admin/Bookings/components/BookingDialog.vue';
+import type { Booking, CreateBookingPayload, UpdateBookingPayload } from '@/types';
+import axios from 'axios';
 
-// 控制日曆顯示
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -15,20 +17,22 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
+// 基礎配置
 const BookingStore = useBookingStore();
 const userStore = useUserStore();
 const systemStore = useSystemStore();
 
 // 權限控制
-const isStaff = computed(
-  () => userStore.userInfo.role === 'super_admin' || userStore.userInfo.role === 'dept_hr',
-);
+const isStaff = computed<boolean>(() => {
+  const role = userStore.userInfo?.role;
+  return role === 'super_admin' || role === 'dept_hr';
+});
 
 // 使用者ID
-const myUserId = computed(() => userStore.userInfo.id);
+const myUserId = computed<string>(() => userStore.userInfo?.id ?? '');
 
 // 選中的面試官ID
-const selectedInterviewerId = ref(isStaff.value ? null : myUserId.value);
+const selectedInterviewerId = ref<string | null>(isStaff.value ? null : myUserId.value);
 
 // 獲取面試官列表 => 篩選
 const otherInterviewerOptions = computed(() => {
@@ -57,27 +61,20 @@ watch(
   { immediate: true },
 );
 
-// 初始化載入
-onMounted(async () => {
-  if (isStaff.value) {
-    await systemStore.fetchAllOptions();
-  }
-});
-
 // 資料處理
 const selectedDate = ref(new Date().toISOString().slice(0, 10));
 const bookings = computed(() => (Array.isArray(BookingStore.items) ? BookingStore.items : []));
 
 // 資料分組 （按日期）
 const bookingsByDate = computed(() => {
-  const map = new Map();
+  const map = new Map<string, Booking[]>();
   for (const b of bookings.value) {
     if (!b.date) continue;
     const dateKey = b.date.slice(0, 10);
     if (!map.has(dateKey)) {
       map.set(dateKey, []);
     }
-    map.get(dateKey).push(b);
+    map.get(dateKey)!.push(b);
   }
   // 每個日期內的行程按照時間排序
   for (const arr of map.values()) {
@@ -88,12 +85,12 @@ const bookingsByDate = computed(() => {
 });
 
 // 判斷某天是否有行程
-const hasBookings = (day) => {
+const hasBookings = (day: string): boolean => {
   return (bookingsByDate.value.get(day)?.length ?? 0) > 0;
 };
 
 // 選中日期的行程列表
-const dayBookings = computed(() => bookingsByDate.value.get(selectedDate.value) ?? []);
+const dayBookings = computed<Booking[]>(() => bookingsByDate.value.get(selectedDate.value) ?? []);
 
 // 點擊返回今天
 const calendarDate = ref(new Date());
@@ -107,14 +104,14 @@ watch(calendarDate, (newVal) => {
 });
 
 // 彈窗相關
-const dialogOpen = ref(false);
-const dialogMode = ref('create');
-const dialogInitial = ref(null);
-const dialogSaving = ref(false);
-const conflictMsg = ref('');
+const dialogOpen = ref<boolean>(false);
+const dialogMode = ref<'create' | 'edit'>('create');
+const dialogInitial = ref<Partial<Booking> | null>(null);
+const dialogSaving = ref<boolean>(false);
+const conflictMsg = ref<string>('');
 
 // 新增行程
-function openCreate(prefill = {}) {
+function openCreate(prefill: Partial<Booking> = {}) {
   if (!isMyOwnSchedule.value) {
     return ElMessage.warning('你無權為其他面試官安排私人行程');
   }
@@ -135,7 +132,7 @@ function openCreate(prefill = {}) {
 }
 
 // 編輯行程
-function openEdit(row) {
+function openEdit(row: Booking) {
   if (!isMyOwnSchedule.value) {
     return ElMessage.info('查看模式：無法修改他人行程');
   }
@@ -146,7 +143,7 @@ function openEdit(row) {
 }
 
 // 刪除行程
-async function del(id) {
+async function del(id: string) {
   try {
     await ElMessageBox.confirm('你確定要刪除這個行程嗎？', '刪除行程', {
       confirmButtonText: '刪除',
@@ -155,8 +152,11 @@ async function del(id) {
     });
     await BookingStore.remove(id);
     ElMessage.success('刪除行程成功');
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error(e.response?.data?.error || e.message);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return err.response?.data?.message || err.message;
+    }
+    return err instanceof Error ? err.message : '未知錯誤';
   }
 }
 
@@ -167,21 +167,26 @@ function closeDialog() {
 }
 
 // 提交表單
-async function handleSubmit(payload) {
+async function handleSubmit(payload: CreateBookingPayload | UpdateBookingPayload) {
   dialogSaving.value = true;
   try {
     // 新增模式
     if (dialogMode.value === 'create') {
-      await BookingStore.add(payload);
+      await BookingStore.add(payload as CreateBookingPayload);
       ElMessage.success('新增成功');
-    } else {
+    } else if (dialogInitial.value?.id) {
       // 編輯模式
-      await BookingStore.patch(dialogInitial.value.id, payload);
+      await BookingStore.patch(dialogInitial.value.id, payload as UpdateBookingPayload);
       ElMessage.success('更新成功');
     }
     closeDialog();
-  } catch (e) {
-    const msg = e.response?.data?.error || e.message;
+  } catch (err: unknown) {
+    let msg = '發生未知錯誤';
+    if (axios.isAxiosError(err)) {
+      msg = err.response?.data?.error || err.message;
+    } else if (err instanceof Error) {
+      msg = err.message;
+    }
     if (msg.includes('衝突')) {
       conflictMsg.value = '時間衝突，該時段已安排面試或會議';
     } else {
@@ -193,9 +198,16 @@ async function handleSubmit(payload) {
 }
 
 // 切換日期
-function openDayDetails(day) {
+function openDayDetails(day: string) {
   selectedDate.value = day;
 }
+
+// 初始化載入
+onMounted(async () => {
+  if (isStaff.value) {
+    await systemStore.fetchAllOptions();
+  }
+});
 </script>
 <template>
   <div class="schedule-page">
@@ -253,7 +265,7 @@ function openDayDetails(day) {
                   v-if="(bookingsByDate.get(data.day)?.length ?? 0) > 0"
                   size="small"
                 >
-                  {{ bookingsByDate.get(data.day).length }}
+                  {{ bookingsByDate.get(data.day)?.length }}
                 </el-tag>
               </template>
             </div>
@@ -280,7 +292,7 @@ function openDayDetails(day) {
                   class="slot more"
                   @click.stop="openDayDetails(data.day)"
                 >
-                  +{{ bookingsByDate.get(data.day).length - 3 }}
+                  +{{ (bookingsByDate.get(data.day) ?? []).length - 3 }}
                 </button>
               </template>
             </div>

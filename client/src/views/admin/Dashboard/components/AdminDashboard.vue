@@ -1,21 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { getAdminDashboard } from '@/api/dashboard';
 import TrendChart from './TrendChart.vue';
 import PieChart from './PieChart.vue';
 import { useRouter } from 'vue-router';
+import type { AdminDashboardData } from '@/types';
 
+// 路由
 const router = useRouter();
 
-const loading = ref(false);
-const dashboardData = ref({
-  stats: { totalCandidates: 0, activeJobs: 0, totalTodayInterviews: 0 },
-  trend: [],
-  sourceData: [],
-});
+// 載入狀態
+const loading = ref<boolean>(false);
 
 // 定義標簽顔色
-const sourceColorMap = {
+const sourceColorMap: Record<string, string> = {
   '104 人力銀行': '#409EFF',
   LinkedIn: '#0077B5',
   CakeResume: '#EEAD0E',
@@ -25,11 +23,25 @@ const sourceColorMap = {
   '獵頭顧問 (Headhunter)': '#606266',
 };
 
+// 使用介面定義初始值
+const dashboardData = ref<AdminDashboardData>({
+  stats: {
+    totalCandidates: 0,
+    activeJobs: 0,
+    totalTodayInterviews: 0,
+  },
+  trend: [],
+  sourceData: [],
+  updatedAt: '',
+});
+
 const fetchData = async () => {
   loading.value = true;
   try {
     const res = await getAdminDashboard();
-    dashboardData.value = res.data;
+    if (res.data) {
+      dashboardData.value = res.data;
+    }
   } catch (error) {
     console.error('Fetch Admin Data Error:', error);
   } finally {
@@ -40,10 +52,10 @@ const fetchData = async () => {
 // 轉換數據 => PieChart
 const formattedSourceData = computed(() => {
   return dashboardData.value.sourceData.map((item) => ({
-    name: item.name,
+    name: item.name || item.status || '未知',
     value: item.count,
     itemStyle: {
-      color: sourceColorMap[item.name] || '#DCDFE6',
+      color: sourceColorMap[item.name || ''] || '#DCDFE6',
     },
   }));
 });
@@ -93,11 +105,7 @@ onMounted(fetchData);
           <template #header>
             <div class="db-section-title">全站面試活躍趨勢 (近七日)</div>
           </template>
-          <TrendChart
-            :data="dashboardData.trend"
-            title="面試場次"
-            color="#67C23A"
-          />
+          <TrendChart :data="dashboardData.trend" title="面試場次" color="#67C23A" />
         </el-card>
       </el-col>
 

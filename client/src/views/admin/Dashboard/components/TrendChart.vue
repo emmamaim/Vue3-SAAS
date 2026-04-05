@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import VChart from 'vue-echarts';
 
@@ -10,21 +10,36 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
 // 座標系 / 滑鼠懸停提示 / 圖例
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import type { ComposeOption } from 'echarts/core';
+import type { LineSeriesOption } from 'echarts/charts';
+import type { GridComponentOption, TooltipComponentOption } from 'echarts/components';
+import type { TrendData } from '@/types';
+
 // 註冊
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent]);
 
-// 外部傳入的資料(dashboard的createdTrend)
-const props = defineProps({
-  data: { type: Array, default: () => [] },
-  title: { type: String, default: '次數' },
-  color: { type: String, default: '#409EFF' }
+// 定義 ECharts 配置項的型別組合
+type ECOption = ComposeOption<
+  LineSeriesOption | GridComponentOption | TooltipComponentOption
+>;
+
+// props
+interface Props {
+  data?: TrendData[];
+  title?: string;
+  color?: string;
+}
+const props = withDefaults(defineProps<Props>(), {
+  data: () => [],
+  title: '次數',
+  color: '#409EFF'
 });
 
 // 圖表顯示
 const isRendered = ref(false);
 
 const processedData = computed(() => {
-  const map = new Map();
+  const map = new Map<string, number>();
   const today = new Date();
 
   // 建立最近七天的標簽
@@ -48,7 +63,8 @@ const processedData = computed(() => {
     count
   }))
 })
-const option = computed(() => {
+
+const option = computed<ECOption>(() => {
   // 數據預處理：拆解成兩個獨立的陣列
   const x = processedData.value.map((d) => d.label);
   const y = processedData.value.map((d) => d.count);
@@ -97,7 +113,6 @@ const option = computed(() => {
         areaStyle: {
           color: {
             type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
               { offset: 0, color: props.color + '4D' },
               { offset: 1, color: props.color + '00' }

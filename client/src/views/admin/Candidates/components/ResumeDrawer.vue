@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue';
 import { fileHost } from '@/utils/request';
 
-// 動態計算抽屜寬度
+// 響應式佈局
 const windowWidth = ref(window.innerWidth);
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
@@ -19,13 +19,22 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-const props = defineProps({
-  modelValue: Boolean,
-  url: String,
+// props
+interface Props {
+  modelValue: boolean;
+  url?: string | null;
+}
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: false,
+  url: '',
 });
 
-const emit = defineEmits(['update:modelValue']);
+// emit
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+}>();
 
+// --- 檔案處理邏輯 ---
 // 拼接完整的檔案路徑
 const fullUrl = computed(() => {
   if (!props.url) return '';

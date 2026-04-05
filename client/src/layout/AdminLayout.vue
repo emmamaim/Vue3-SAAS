@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores';
@@ -22,28 +22,31 @@ import {
 import { useDark, useToggle } from '@vueuse/core';
 import { ElMessageBox, ElMessage } from 'element-plus';
 
+// 基礎配置
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
-const isCollapse = ref(false);
+
+// 側邊導航狀態
+const isCollapse = ref<boolean>(false);
 
 // 主題切換
 const isDark = useDark();
 const toggleDark = useToggle(isDark);
 
 // 判斷是否為手機模式
-const checkMobile = () => {
+const checkMobile = (): void => {
   if (window.innerWidth <= 768) {
     isCollapse.value = true;
   }
 };
 
 // 切換路由後自動更新 -> el-menu高亮
-const activePath = computed(() => route.path);
+const activePath = computed<string>(() => route.path);
 
 // 動態標題
-const title = computed(() => {
-  const map = {
+const title = computed<string>(() => {
+  const map: Record<string, string> = {
     '/dashboard': '儀表板',
     '/system': '系統配置',
     '/users': '用戶管理',
@@ -56,7 +59,7 @@ const title = computed(() => {
 });
 
 // 登出
-const handleLogout = async () => {
+const handleLogout = async (): Promise<void> => {
   try {
     await ElMessageBox.confirm('您確定要退出系統嗎？', '提示', {
       confirmButtonText: '確定',
@@ -67,7 +70,7 @@ const handleLogout = async () => {
     ElMessage.success('已安全退出');
     // 清除狀態後跳轉
     router.push('/login');
-  } catch (error) {
+  } catch (error: unknown) {
     if (error !== 'cancel') {
       console.error('Logout failed:', error);
     }
@@ -124,7 +127,7 @@ onUnmounted(() => {
         </el-menu-item>
 
         <el-menu-item
-          v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role)"
+          v-if="['super_admin', 'dept_hr'].includes(userStore.userInfo?.role ?? '')"
           index="/admin/candidates"
         >
           <el-icon>
@@ -143,7 +146,7 @@ onUnmounted(() => {
         </el-menu-item>
 
         <el-menu-item
-          v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role)"
+          v-if="['super_admin', 'dept_hr', 'interviewer'].includes(userStore.userInfo?.role ?? '')"
           index="/admin/bookings"
         >
           <el-icon>

@@ -1,17 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { useRouter, RouterView } from 'vue-router';
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Motion } from '@motionone/vue';
 
 const router = useRouter();
-const showBackToTop = ref(false);
+const showBackToTop = ref<boolean>(false);
 
 // --- 捲動邏輯 ---
-const handleScroll = () => {
+const handleScroll = (): void => {
   showBackToTop.value = window.scrollY > 400;
 };
 
-const scrollToTop = () => {
+const scrollToTop = (): void => {
   window.scrollTo({
     top: 0,
     behavior: 'smooth',

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import {
   OfficeBuilding,
@@ -16,18 +16,35 @@ import {
 } from '@/api/system';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useSystemStore } from '@/stores';
+import type { DepartmentItem, JobItem, SourceItem, BaseOptions } from '@/types';
 
 const systemStore = useSystemStore();
 
+// 定義 TAB 型別
+type TabType = 'departments' | 'jobs' | 'categories' | 'sources';
+
+// 聯集型別
+type RawSystemItem = DepartmentItem | JobItem | SourceItem | BaseOptions;
+
+// 定義編輯表單的聯集型別
+interface SystemForm extends Partial<DepartmentItem>, Partial<JobItem> {
+  name: string;
+  desc?: string;
+  type?: 'Internal' | 'External' | 'Campus' | '內部推薦' | '外部管道' | '校園招聘';
+  // 增加顯示用的擴充欄位
+  manager_name?: string;
+  category_name?: string;
+}
+
 // 響應式狀態
-const activeTab = ref('departments');
-const selectedId = ref(null);
-const listData = ref([]);
+const activeTab = ref<TabType>('departments');
+const selectedId = ref<string | number | null>(null);
+const listData = ref<SystemForm[]>([]);
 const loading = ref(false);
 const submitLoading = ref(false);
 
 // 表單
-const editForm = ref({});
+const editForm = ref<SystemForm>({ name: '' });
 
 // 導航卡片配置
 const tabs = [
@@ -37,41 +54,48 @@ const tabs = [
   { id: 'sources', label: '人才來源', icon: Filter, color: '#F56C6C' },
 ];
 
+// 選中項目並深拷貝到編輯表單
+const selectItem = (item: SystemForm) => {
+  selectedId.value = item.id || null;
+  editForm.value = JSON.parse(JSON.stringify(item));
+};
+
+// 類型映射
+const typeMap: Record<string, string> = {
+  Internal: '內部推薦',
+  External: '外部管道',
+  Campus: '校園招聘',
+};
+
 // 獲取數據
-const fetchList = async (type = activeTab.value) => {
+const fetchList = async (type: TabType = activeTab.value) => {
   loading.value = true;
   try {
-    const res = await getSystemSettingsService(type);
-    let rawData = res.data || [];
+    const res = await getSystemSettingsService<RawSystemItem>(type);
 
-    if (type === 'jobs') {
-      rawData = rawData.map((item) => ({
-        ...item,
-        name: item.job_name,
-        desc: item.description,
-      }));
-    } else if (type === 'departments') {
-      rawData = rawData.map((item) => ({
-        ...item,
-        desc: item.description,
-      }));
-    } else if (type === 'sources') {
-      rawData = rawData.map((item) => ({
-        ...item,
-        name: item.name,
-        type:
-          item.type === 'Internal' ? '內部推薦' : item.type === 'Campus' ? '校園招聘' : '外部管道',
-      }));
+    if (res.success && res.data) {
+      const rawData = res.data;
+
+      listData.value = rawData.map((item) => {
+        const name = (item as JobItem).job_name || (item as BaseOptions).name || '';
+        const desc = (item as JobItem).description || (item as DepartmentItem).description || '';
+        const itemType = (item as SourceItem).type || '';
+        const displayType = typeMap[itemType] || itemType;
+
+        return {
+          ...item,
+          name,
+          desc,
+          type: displayType as SystemForm['type'],
+        } as SystemForm;
+      });
     }
-
-    listData.value = rawData;
-
     // 默認選中第一項
     if (listData.value.length > 0) {
       selectItem(listData.value[0]);
     } else {
       selectedId.value = null;
-      editForm.value = {};
+      editForm.value = { name: '' };
     }
   } catch {
     ElMessage.error('獲取資料失敗');
@@ -80,16 +104,10 @@ const fetchList = async (type = activeTab.value) => {
   }
 };
 
-// 選中項目並深拷貝到編輯表單
-const selectItem = (item) => {
-  selectedId.value = item.id;
-  editForm.value = JSON.parse(JSON.stringify(item));
-};
-
 // 切換TAB
-const handleTabChange = (id) => {
-  activeTab.value = id;
-  fetchList(id);
+const handleTabChange = (id: string) => {
+  activeTab.value = id as TabType;
+  fetchList(activeTab.value);
 };
 
 // 儲存
@@ -99,33 +117,41 @@ const handleSave = async () => {
   }
   submitLoading.value = true;
 
-  let payload = { ...editForm.value };
+  let payload: Partial<DepartmentItem & JobItem & SourceItem> = {};
 
   if (activeTab.value === 'jobs') {
     payload = {
-      ...editForm.value,
+      id: selectedId.value === 'new' ? undefined : (selectedId.value as number),
       job_name: editForm.value.name,
+      category_id: Number(editForm.value.category_id),
       description: editForm.value.desc,
     };
   } else if (activeTab.value === 'departments') {
     payload = {
-      ...editForm.value,
+      id: selectedId.value === 'new' ? undefined : (selectedId.value as number),
+      name: editForm.value.name,
+      manager_id: editForm.value.manager_id as number | undefined,
       description: editForm.value.desc,
     };
   } else if (activeTab.value === 'sources') {
-    const typeMapping = {
+    const reverseTypeMap: Record<string, 'Internal' | 'External' | 'Campus'> = {
       內部推薦: 'Internal',
       外部管道: 'External',
       校園招聘: 'Campus',
     };
     payload = {
-      id: editForm.value.id,
+      id: selectedId.value === 'new' ? undefined : (editForm.value.id as number),
       name: editForm.value.name,
-      type: typeMapping[editForm.value.type] || 'External',
+      type: reverseTypeMap[editForm.value.type || '外部管道'] || 'External',
     };
-    // 確保不帶desc字段
-    delete payload.desc;
+  } else {
+    // 處理 categories 或其他
+    payload = {
+      id: selectedId.value === 'new' ? undefined : (selectedId.value as number),
+      name: editForm.value.name,
+    };
   }
+
   try {
     await saveSystemSettingService(activeTab.value, payload);
     ElMessage.success('儲存成功');
@@ -147,7 +173,7 @@ const handleDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning',
     });
-    await deleteSystemSettingService(activeTab.value, selectedId.value);
+    await deleteSystemSettingService(activeTab.value, Number(selectedId.value));
     ElMessage.success('刪除成功');
     await systemStore.refreshOptions();
     fetchList();
@@ -167,11 +193,11 @@ const handleAdd = () => {
     description: '',
   };
   if (activeTab.value === 'departments') {
-    editForm.value = { ...baseForm, manager_id: null };
+    editForm.value = { ...baseForm, manager_id: undefined };
   } else if (activeTab.value === 'sources') {
     editForm.value = { ...baseForm, type: '外部管道' };
   } else if (activeTab.value === 'jobs') {
-    editForm.value = { ...baseForm, category_id: null };
+    editForm.value = { ...baseForm, category_id: undefined };
   } else {
     editForm.value = baseForm;
   }
@@ -198,6 +224,7 @@ const currentItem = computed(() => {
 
 <template>
   <div class="system-container" v-loading="loading">
+    <!-- 頂部導航 -->
     <el-row :gutter="20" class="top-nav-row">
       <el-col :xs="12" :sm="12" :md="6" v-for="tab in tabs" :key="tab.id">
         <div
@@ -225,14 +252,17 @@ const currentItem = computed(() => {
     </el-row>
 
     <el-row :gutter="20" class="main-body-row">
+      <!-- 側邊列表 -->
       <el-col :xs="24" :sm="10" :md="8" :lg="6" class="content-col">
         <div class="glass-module list-module">
+          <!-- 區域標題 -->
           <div class="module-header">
-            <span>{{ tabs.find((t) => t.id === activeTab).label }}列表</span>
+            <span>{{ tabs.find((t) => t.id === activeTab)?.label }}列表</span>
 
             <el-button type="primary" :icon="Plus" circle size="small" @click="handleAdd" />
           </div>
 
+          <!-- 滾動區域 -->
           <el-scrollbar>
             <div class="card-list" v-if="listData.length > 0">
               <div
@@ -245,9 +275,7 @@ const currentItem = computed(() => {
                   <div class="name">{{ item.name }}</div>
 
                   <div class="sub">
-                    {{
-                      item.manager_name || item.manager || item.category || item.type || '系統配置'
-                    }}
+                    {{ item.manager_name || item.category_name || item.type || '系統配置' }}
                   </div>
                 </div>
 
@@ -260,12 +288,13 @@ const currentItem = computed(() => {
         </div>
       </el-col>
 
+      <!-- 新增 / 編輯區 -->
       <el-col :xs="24" :sm="14" :md="16" :lg="18" class="content-col">
         <div class="glass-module detail-module">
           <template v-if="selectedId">
             <div class="detail-header">
               <div class="header-info">
-                <h2>{{ selectedId === 'new' ? '新增項目' : currentItem.name }}</h2>
+                <h2>{{ selectedId === 'new' ? '新增項目' : currentItem?.name }}</h2>
 
                 <el-tag v-if="selectedId !== 'new'" size="small" effect="plain"
                   >ID: {{ selectedId }}</el-tag
@@ -284,12 +313,14 @@ const currentItem = computed(() => {
 
             <el-form label-position="top" class="edit-form">
               <el-row :gutter="20">
+                <!-- 通用欄位：名稱 -->
                 <el-col :span="24" :md="12">
                   <el-form-item label="名稱" required>
                     <el-input v-model="editForm.name" placeholder="例如：研發部門、104人力銀行" />
                   </el-form-item>
                 </el-col>
 
+                <!-- 部門 -->
                 <el-col :span="24" :md="12" v-if="activeTab === 'departments'">
                   <el-form-item label="部門負責人">
                     <el-select
@@ -308,6 +339,7 @@ const currentItem = computed(() => {
                   </el-form-item>
                 </el-col>
 
+                <!-- 人才來源 -->
                 <el-col :span="24" :md="12" v-if="activeTab === 'sources'">
                   <el-form-item label="管道類型">
                     <el-select v-model="editForm.type" style="width: 100%">
@@ -320,6 +352,7 @@ const currentItem = computed(() => {
                   </el-form-item>
                 </el-col>
 
+                <!-- 職位 -->
                 <el-col :span="24" :md="12" v-if="activeTab === 'jobs'">
                   <el-form-item label="職位類別">
                     <el-select v-model="editForm.category_id" style="width: 100%">
@@ -334,7 +367,11 @@ const currentItem = computed(() => {
                 </el-col>
               </el-row>
 
-              <el-form-item label="詳細描述/備註" v-if="activeTab !== 'sources'">
+              <!-- 人才來源不顯示描述 -->
+              <el-form-item
+                label="詳細描述/備註"
+                v-if="activeTab === 'departments' || activeTab === 'jobs'"
+              >
                 <el-input
                   v-model="editForm.desc"
                   type="textarea"
@@ -344,6 +381,7 @@ const currentItem = computed(() => {
                 />
               </el-form-item>
 
+              <!-- 按鈕操作區 -->
               <div class="btn-group">
                 <el-button type="primary" size="large" :loading="submitLoading" @click="handleSave">
                   {{ selectedId === 'new' ? '立即創建' : '儲存更變' }}

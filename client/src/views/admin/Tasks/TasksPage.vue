@@ -1,33 +1,30 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useTasksStore } from '@/stores';
 import TaskDialog from '@/views/admin/Tasks/components/TaskDialog.vue';
 import { useTaskDnD } from '@/views/admin/Tasks/composables/useTaskDnD';
 import { Edit, RefreshLeft } from '@element-plus/icons-vue';
+import type { Task, TaskFeedbackPayload } from '@/types';
+import axios from 'axios';
 
 const tasksStore = useTasksStore();
 
 // 拖拽邏輯物件 dnd (Drag and Drop)
 const dnd = useTaskDnD();
 
-// 初始化載入
-onMounted(async () => {
-  await tasksStore.fetchAll();
-});
-
-// Computed 過濾器 => 任務狀態
-const todo = computed(() => tasksStore.byStatus('todo'));
-const done = computed(() => tasksStore.byStatus('done'));
+// 任務狀態
+const todo = computed<Task[]>(() => tasksStore.byStatus('todo'));
+const done = computed<Task[]>(() => tasksStore.byStatus('done'));
 
 // 拖拽放置 dnd
-async function onDropTo(status) {
+async function onDropTo(status: 'todo' | 'done') {
   // 先獲取被拖拽卡片的id
   const id = dnd.draggingId.value;
   if (!id) return;
   // 尋找該任務
   const task = tasksStore.items.find((t) => t.id === id);
-  // 防呆：任務不存在或放下位置與原來位置一樣 => 結束
+  // 型別守衛
   if (!task || task.status === status) {
     dnd.onDragEnd();
     return;
@@ -44,7 +41,7 @@ async function onDropTo(status) {
 }
 
 // 移動（更新）任務
-async function move(id, status) {
+async function move(id: string, status: 'todo' | 'done') {
   try {
     await tasksStore.updateStatus(id, status);
     ElMessage.success('已更新');
@@ -55,12 +52,12 @@ async function move(id, status) {
 
 // 彈窗控制
 const dialogOpen = ref(false);
-const dialogInitial = ref(null);
+const dialogInitial = ref<Task | null>(null);
 const dialogSaving = ref(false);
 
 // 打開彈窗
-function openEdit(task) {
-  dialogInitial.value = task;
+function openEdit(task: Task) {
+  dialogInitial.value = { ...task };
   dialogOpen.value = true;
 }
 
@@ -71,19 +68,27 @@ function closeDialog() {
 }
 
 // 提交
-async function handleSubmit(payload) {
+async function handleSubmit(payload: TaskFeedbackPayload) {
   if (!dialogInitial.value?.id) return;
   dialogSaving.value = true;
   try {
     await tasksStore.submitInterviewResult(dialogInitial.value.id, payload);
     ElMessage.success('面試評價已提交');
     closeDialog();
-  } catch (e) {
-    ElMessage.error('提交失敗：' + (e.message || '未知錯誤'));
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return err.response?.data?.message || err.message;
+    }
+    return err instanceof Error ? err.message : '未知錯誤';
   } finally {
     dialogSaving.value = false;
   }
 }
+
+// 初始化載入
+onMounted(async () => {
+  await tasksStore.fetchAll();
+});
 </script>
 <template>
   <div class="main">
@@ -140,7 +145,7 @@ async function handleSubmit(payload) {
                 @click="openEdit(t)"
                 :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }"
                 draggable="true"
-                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)"
+                @dragstart.stop="(e: DragEvent) => dnd.onDragStart(t.id, e)"
                 @dragend="dnd.onDragEnd"
               >
                 <!-- 任務容器 -->
@@ -196,7 +201,7 @@ async function handleSubmit(payload) {
                 @click="openEdit(t)"
                 :class="{ 'task-card--dragging': dnd.draggingId.value === t.id }"
                 draggable="true"
-                @dragstart.stop="(e) => dnd.onDragStart(t.id, e)"
+                @dragstart.stop="(e: DragEvent) => dnd.onDragStart(t.id, e)"
                 @dragend="dnd.onDragEnd"
               >
                 <!-- 任務容器 -->

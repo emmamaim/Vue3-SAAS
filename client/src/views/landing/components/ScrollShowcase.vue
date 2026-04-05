@@ -1,6 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Motion } from '@motionone/vue';
+import type { ScreenFeature } from '@/types';
 
 // --- 圖片引入 ---
 import loginImg from '@/assets/images/loginPage.png';
@@ -9,10 +10,10 @@ import settingsImg from '@/assets/images/settings.png';
 import candidatesImg from '@/assets/images/candidates.png';
 import calendarImg from '@/assets/images/calendar.png';
 
-const currentScreenIndex = ref(0);
+const currentScreenIndex = ref<number>(0);
 
 // --- 根據圖片內容撰寫的行銷文案 ---
-const screens = [
+const screens: ScreenFeature[] = [
   {
     pc: loginImg,
     title: '安全便捷的存取門戶',
@@ -55,15 +56,21 @@ const screens = [
   },
 ];
 
-let timer;
-onMounted(() => {
+// 計時器邏輯
+let timer: ReturnType<typeof setInterval> | undefined;
+const startRotation = (): void => {
   timer = setInterval(() => {
     currentScreenIndex.value = (currentScreenIndex.value + 1) % screens.length;
   }, 5000);
+};
+const stopRotation = (): void => {
+  if (timer) clearInterval(timer);
+};
+onMounted(() => {
+  startRotation();
 });
-
 onUnmounted(() => {
-  clearInterval(timer);
+  stopRotation();
 });
 </script>
 

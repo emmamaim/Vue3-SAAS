@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { Motion } from '@motionone/vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import type { PricingPlan } from '@/types';
 
 const router = useRouter();
 
@@ -10,8 +11,8 @@ const goLogin = () => {
 };
 const goToContact = () => router.push('/contact-us');
 
-const isYearly = ref(true);
-const plans = [
+const isYearly = ref<boolean>(true);
+const plans: PricingPlan[] = [
   {
     name: '基礎版 (Free)',
     price: 0,

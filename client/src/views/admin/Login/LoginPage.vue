@@ -1,14 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { useUserStore } from '@/stores';
 import { User, Lock } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
-const form = ref();
+const form = ref<FormInstance>();
 
 const formModel = ref({
   username: '',
@@ -18,26 +18,27 @@ const formModel = ref({
 // 登入按鈕呼吸動畫
 const isButtonBreathing = ref(false);
 // ✨ 新增：用來儲存定時器，以便銷毀
-let typingTimer = null;
+let typingTimer: number | null = null;
 
 // 打字效果
-const typeEffect = (targetKey, fullText, delay = 100) => {
-  return new Promise((resolve) => {
+const typeEffect = (targetKey: 'username' | 'password', fullText: string, delay = 100) => {
+  return new Promise<void>((resolve) => {
     let i = 0;
     formModel.value[targetKey] = '';
-    typingTimer = setInterval(() => {
+    typingTimer = window.setInterval(() => {
       formModel.value[targetKey] += fullText[i];
       i++;
       if (i >= fullText.length) {
-        clearInterval(typingTimer);
-        resolve(); // 打字完成
+        if (typingTimer) clearInterval(typingTimer);
+        resolve();
       }
     }, delay);
   });
 };
 
 onMounted(async () => {
-  const { autoUser, autoPass } = route.query;
+  const autoUser = route.query.autoUser as string;
+  const autoPass = route.query.autoPass as string;
   if (autoUser && autoPass) {
     ElMessage.info('正在為您準備測試環境...');
 
@@ -56,7 +57,7 @@ onUnmounted(() => {
   if (typingTimer) clearInterval(typingTimer);
 });
 
-const rules = {
+const rules: FormRules = {
   username: [
     { required: true, message: '請輸入用戶名', trigger: 'blur' },
     {
@@ -90,9 +91,15 @@ const login = async () => {
     setTimeout(() => {
       router.push('/admin/dashboard');
     }, 200);
-  } catch (error) {
-    const msg = error.response?.data?.message || '登入失敗，請檢查帳號密碼';
-    ElMessage.error(msg);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      ElMessage.error(error.message);
+    } else if (typeof error === 'string') {
+      ElMessage.error(error);
+    } else {
+      ElMessage.error('發生未知錯誤，請稍後再試');
+    }
+    console.error('詳細錯誤資訊:', error);
   }
 };
 </script>
@@ -240,7 +247,6 @@ const login = async () => {
     transform: scale(1);
   }
 }
-
 .btn-breath {
   animation: breath-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   border-color: #a0cfff !important;

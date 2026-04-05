@@ -1,9 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue';
 import { Search, Plus, RefreshLeft } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+
+import type { UserList, UserQuery} from '@/types';
 import { userListService, userUpdateStatusService } from '@/api/users';
 import { useSystemStore } from '@/stores';
+
 import { useWindowSize } from '@vueuse/core';
 import UserDialog from './components/UserDialog.vue';
 
@@ -13,17 +16,17 @@ const { width } = useWindowSize();
 
 // 響應式數據定義
 const loading = ref(false);
-const userList = ref([]);
+const userList = ref<UserList[]>([]);
 const total = ref(0);
 const dialogVisible = ref(false);
-const currentRow = ref({});
+const currentRow = ref<Partial<UserList>>({});
 
 // 搜尋和分頁參數
-const queryParams = reactive({
+const queryParams = reactive<UserQuery>({
   page: 1,
   pageSize: 10,
-  dept_id: '',
-  role: '',
+  dept_id: undefined,
+  role: undefined,
 });
 
 // 斷點設為 1024px，涵蓋大部分平板
@@ -38,8 +41,8 @@ const getUserList = async () => {
   loading.value = true;
   try {
     const res = await userListService(queryParams);
-    userList.value = res.data;
-    total.value = res.total;
+    userList.value = res.data || [];
+    total.value = res.total || 0;
   } finally {
     loading.value = false;
   }
@@ -53,8 +56,8 @@ const handleQuery = () => {
 
 // 重置搜尋條件
 const handleReset = () => {
-  queryParams.dept_id = '';
-  queryParams.role = '';
+  queryParams.dept_id = undefined;
+  queryParams.role = undefined;
   queryParams.page = 1;
   getUserList();
 };
@@ -66,13 +69,13 @@ const handleAdd = () => {
 };
 
 // 編輯用戶
-const handleEdit = (row) => {
+const handleEdit = (row: UserList) => {
   currentRow.value = { ...row };
   dialogVisible.value = true;
 };
 
 // 啓用/停用用戶
-const handleToggleStatus = async (row) => {
+const handleToggleStatus = async (row: UserList) => {
   const isActivating = row.status !== 'active';
   const actionText = isActivating ? '啟用' : '停用';
   try {
@@ -88,8 +91,12 @@ const handleToggleStatus = async (row) => {
 };
 
 // 格式化工具（role角色）
-const formatRole = (role) => {
-  const map = { super_admin: '管理員', dept_hr: '部門HR', interviewer: '面試官' };
+const formatRole = (role: string) => {
+  const map: Record<string, string> = {
+    super_admin: '管理員',
+    dept_hr: '部門HR',
+    interviewer: '面試官',
+  };
   return map[role] || role;
 };
 
