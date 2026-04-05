@@ -62,9 +62,12 @@
 
 
 ## 🔮 未來優化方向 (Roadmap)
-* **TypeScript 重構**：強化類型安全與開發效率。
-* **自動化通知系統**：整合簡訊或 Email API 實作面試通知。
+* **即時數據監控大屏** (WebSocket & ECharts Demo)
+即時通訊實作：建立 WebSocket 全雙工通道，實現 Node.js 後端與 Vue 前端的不間斷資料推送。動態視覺化渲染：整合 ECharts 實作動態折線圖/柱狀圖，展示每 2 秒更新一次的即時資料流。模擬高頻寫入：於 Node.js 實作 Mock 邏輯，模擬 MySQL 資料庫高頻寫入與同步轉發機制，展示系統處理併發資料的能力。
 
+* **自動化通知體系**：整合簡訊或 Email API，實作面試邀請與流程狀態的自動化推送。
+
+* **組件庫抽離與優化**：將常用的 UI 模式（如檔案上傳、彈窗表單）進一步封裝成高階組件（Headless Components），降低代碼重複率。
 
 ## ✉️ 開發自述 (Project Philosophy)
 這個專案是我對「從開發到上線」完整流程的體現。我認為前端開發者的價值不只在於切圖，更在於對**業務邏輯的嚴謹實作**（如時間衝突檢測）以及對**產品質感**的堅持。
@@ -75,3 +78,8 @@
 * 引入 Motion One，實作 Hero Section 與卡片組件的非同步進場動畫。
 * 完成 Landing Page 商業化改版，包含定價方案、測試帳號一鍵登入功能。
 * 解決 JS 動畫與 CSS 渲染衝突，優化首屏加載流暢度。
+
+### 2026-04-05 | 核心體系轉型 TypeScript
+* 全站架構重構：將前端 codebase 從 JavaScript 全面遷移至 TypeScript，建立強型別開發環境。
+* 定義全局型別實體：封裝 src/types 模組，統一部署 ApiResponse、SystemInitData 與 UserOption 等核心 Interface，解決原本資料流不明確的問題。
+* Pinia Store 強型別化：重構 useSystemStore 與 useUserStore，實作 Actions 的型別斷言，大幅提升全域狀態管理的穩定性。
