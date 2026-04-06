@@ -118,10 +118,12 @@ const alertLogs = ref<IoTData[]>([]);
 // 設定告警門檻（例如超過 33 度就記錄）
 const ALERT_THRESHOLD = 33;
 
+const host = window.location.hostname;
+
 // WebSocket連線
 onMounted(() => {
   // 建立連線實例
-  socket = new WebSocket('ws://127.0.0.1:3000');
+  socket = new WebSocket(`wss://${host}/api/ws`);
 
   // 接通
   socket.onopen = () => {

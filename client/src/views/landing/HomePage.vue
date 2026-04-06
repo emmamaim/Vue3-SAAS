@@ -177,11 +177,11 @@ async function archiveCandidate(id) {
             class="relative group px-10 py-4 bg-gray-900 text-white font-bold rounded-xl overflow-hidden transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)]"
           >
             <div
-              class="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity"
+              class="absolute inset-0 bg-linear-to-r from-blue-700 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity"
             ></div>
 
             <div
-              class="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-white/20 opacity-40 group-hover:animate-shine"
+              class="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-linear-to-r from-transparent to-white/20 opacity-40 group-hover:animate-shine"
             ></div>
 
             <span class="relative z-10 flex items-center gap-2">
