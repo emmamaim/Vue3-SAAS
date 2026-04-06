@@ -68,3 +68,10 @@ export interface FAQItem {
   q: string;
   a: string;
 }
+
+// LiveMonitor 主數據
+export interface IoTData {
+  type: string;
+  value: string;
+  time: string;
+}

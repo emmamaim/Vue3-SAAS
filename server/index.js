@@ -1,17 +1,20 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import 'dotenv/config';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { initSocket } from './socket/io.js';
+import cookieParser from 'cookie-parser';
 import {
   auth,
   isAdmin,
   isStaff,
   isInterviewer
-} from './middleware/authMiddleware.js';
-// 引入資料庫和路由
-import db from './config/db.js';
+} from './middleware/authMiddleware.js'; 
+
+// 路由
 import authRoutes from './routes/authRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 import dashRoutes from './routes/dashboardRoutes.js';
@@ -20,11 +23,15 @@ import candidateRoutes from './routes/candidateRoutes.js';
 import interviewRoutes from './routes/interviewRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
-import cookieParser from 'cookie-parser';
 
 const app = express();
+const server = createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// 初始化 WebSocket
+initSocket(server);
+console.log('Socket 初始化完成');
 
 // 初始化檢查：確保資料夾存在
 const uploadDir = path.join(__dirname, 'uploads', 'resumes');
@@ -71,18 +78,8 @@ app.use('/api/interviews', auth, isStaff, interviewRoutes);
 app.use('/api/tasks', auth, isInterviewer, taskRoutes);
 app.use('/api/bookings', auth, bookingRoutes);
 
-// 資料庫與伺服器啟動
-// 1. 測試資料庫連線
-db.getConnection()
-  .then((conn) => {
-    console.log('雲端資料庫連線成功！');
-    conn.release();
-  })
-  .catch((err) => {
-    console.error('資料庫連線失敗:', err.message);
-  });
 
-// 2. 真正的錯誤處理中間件
+// 錯誤處理：中間件
 app.use((err, req, res, next) => {
   console.log('!!! 捕捉到後端錯誤 !!!');
   // 針對 Multer 錯誤進行特殊處理
@@ -105,6 +102,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`後端伺服器運作中：http://localhost:${PORT}`);
 });

@@ -13,6 +13,7 @@ import bgImg1 from '@/assets/images/bg_img1.png';
 import cardImg1 from '@/assets/images/card_img1.png';
 import cardImg2 from '@/assets/images/card_img2.png';
 import cardImg3 from '@/assets/images/card_img3.png';
+import router from '@/router';
 
 // 體驗按鈕導航到測試賬號區塊
 const testAccountRef = ref<ComponentPublicInstance | null>(null);
@@ -37,6 +38,10 @@ const techStack: TechItem[] = [
   { name: 'MongoDB', category: 'Database' },
   { name: 'Tailwind v4', category: 'Styling' },
 ];
+
+const goMonitor = () => {
+  router.push('/live-monitor');
+};
 </script>
 
 <template>
@@ -165,6 +170,38 @@ async function archiveCandidate(id) {
   console.log(`Candidate ${id} secured.`);
 }</code></pre>
           </div>
+        </div>
+        <div class="pt-1">
+          <button
+            @click="goMonitor"
+            class="relative group px-10 py-4 bg-gray-900 text-white font-bold rounded-xl overflow-hidden transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)]"
+          >
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity"
+            ></div>
+
+            <div
+              class="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-white/20 opacity-40 group-hover:animate-shine"
+            ></div>
+
+            <span class="relative z-10 flex items-center gap-2">
+              <span>體驗 Live-Monitor</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 group-hover:translate-x-1.5 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </span>
+          </button>
         </div>
       </div>
     </section>

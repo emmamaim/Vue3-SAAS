@@ -32,6 +32,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ContactUs',
         component: () => import('@/views/landing/ContactUs.vue'),
       },
+      {
+        path: 'live-monitor',
+        name: 'LiveMonitor',
+        component: () => import('@/views/landing/LiveMonitor.vue'),
+        meta: { title: '即時產線監控' },
+      },
     ],
   },
   // 產品展示區
@@ -106,7 +112,7 @@ router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
 
   // 1. 遊客路徑判斷 (利用 meta 或是路徑)
-  const publicPaths = ['/', '/about-us', '/contact-us'];
+  const publicPaths = ['/', '/about-us', '/contact-us', '/live-monitor'];
   if (publicPaths.includes(to.path)) {
     return next();
   }
@@ -137,7 +143,7 @@ router.beforeEach(async (to, from, next) => {
       // 避免無限循環：如果要去的目標已經是 dashboard 就直接放行，否則導回
       return to.path === '/admin/dashboard' ? next() : next('/admin/dashboard');
     }
-    
+
     next();
   } catch (error) {
     console.log(error);
